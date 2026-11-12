@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.2.2 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.3.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2136,6 +2136,7 @@ function buildBarrio() {
     barPark(g, q, { zebra });                                      // Park Avenue (fase 2)
     barMadisonRows(g, row, F); madShops(MF);
     barDocks(g, q);                                                // los muelles del Hudson (v2.2)
+    barLittleItaly(g, q);                                          // Little Italy, al otro lado del túnel (v2.3)
     [-1, 1].forEach(side => { row('x', 0, side, 138, 165); row('x', 0, side, 165, 196, { cheap: true }); row('x', 0, side, -95, -53);
       row('z', 0, side, 48, 75); row('z', 0, side, 75, 130, { cheap: true }); row('z', 0, side, -75, -48); row('z', 0, side, -130, -75, { cheap: true }); });
     // detrás de los almacenes, la ciudad sigue (solo donde queda sitio)
@@ -2234,10 +2235,10 @@ function buildBarrio() {
   // ---- tráfico en las dos avenidas
   const carCols = [0x1c1c1e, 0x2a3a4a, 0x5a1e1a, 0x3a4a3a, 0x8a7a5a, 0x24343a, 0x6a5a48, 0xd9b43a];
   const PX = PARK.X, PS = PARK.HW + 6.9;
-  const lanes = [barPath('ew', [[-105.6, -130], [-105.6, 2.6], [215, 2.6]], -11.9, 'x', [[PX - PS, 'x', 1], [MAD.X - 11.9, 'x', 2]]), barPath('ew', [[215, -2.6], [-100.4, -2.6], [-100.4, -130]], 11.9, 'x', [[PX + PS, 'x', 1], [MAD.X + 11.9, 'x', 2]]),
+  const lanes = [barPath('ew', [[-105.6, -215], [-105.6, 2.6], [215, 2.6]], -11.9, 'x', [[PX - PS, 'x', 1], [MAD.X - 11.9, 'x', 2]]), barPath('ew', [[215, -2.6], [-100.4, -2.6], [-100.4, -215]], 11.9, 'x', [[PX + PS, 'x', 1], [MAD.X + 11.9, 'x', 2]]),
     barPath('ns', [[MAD.X - 2.6, -170], [MAD.X - 2.6, 170]], null, 'z', [[-11.9, 'z', 2]]), barPath('ns', [[MAD.X + 2.6, 170], [MAD.X + 2.6, -170]], null, 'z', [[11.9, 'z', 2]]),
     barPath('ns', [[-2.6, -125], [-2.6, 125]], -11.9, 'z'), barPath('ns', [[2.6, 125], [2.6, -125]], 11.9, 'z'),
-    barPath('ns', [[PX - 6.25, PARK.Z0 - 50], [PX - 6.25, PARK.Z1 + 4]], null, 'z', [[-11.9, 'z', 1]]), barPath('ns', [[PX + 6.25, PARK.Z1 + 4], [PX + 6.25, PARK.Z0 - 50]], null, 'z', [[11.9, 'z', 1]])];
+    barPath('ns', [[PX + 6.25, PARK.Z1 + 4], [PX + 6.25, PARK.Z0 + 13], [PX + 4, PARK.Z0 + 7], [PX, PARK.Z0 + 5.5], [PX - 4, PARK.Z0 + 7], [PX - 6.25, PARK.Z0 + 13], [PX - 6.25, PARK.Z1 + 4]], null, 'z', [[11.9, 'z', 1], [-11.9, 'z', 1, 6]])];   /*PARK-uturn*/
   W.cars = [];
   const nCars = [8, 12, 16][q];
   for (let i = 0; i < nCars; i++) {
@@ -2272,6 +2273,7 @@ function buildBarrio() {
       W.peds.push({ p, R, per, s: Math.random() * per, dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .3, ph: Math.random() * 6, col: colR });
     } }
 
+  barDocksPeds(g, q); barLittleItalyPeds(g, q);   // los paseantes de los muelles y de Little Italy
   // ---- gente fija: vendedor de periódicos, policía de ronda
   const nb = makePerson({ coat: 0x5a4a3a, sleeve: 0xd8d2c4, shirt: 0xd8d2c4, hat: 'flat', hatColor: 0x3a3028, skin: 0xd8b09a, face: 'lean', vary: false });
   nb.group.scale.setScalar(.86); nb.group.position.set(-11.5, .15, -5.45); g.add(nb.group); nb.gaze = false;
@@ -2361,7 +2363,7 @@ function buildBarrio() {
     if (rainObj.visible) rainUpd(dt); rainObj.position.set(P.x, P.fy || 0, P.z);
     W.fount.update(dt); if (W.alleySteam) W.alleySteam.update(dt);
     (W.sheets || []).forEach(sh => { sh.rotation.x = Math.sin(t * 1.7 + sh.userData.sway) * .14; });
-    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); barCullTick(dt);
+    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); if (W.liTick) W.liTick(dt, t); barCullTick(dt);
     const zn = barZone(); if (zn !== W._zone && W.mode === 'walk') { W._zone = zn; setLoc(zn, G.free ? todName(W.hour) : (W.walkSub || 'De noche, bajo la lluvia')); }
   };
   { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
@@ -2381,7 +2383,7 @@ function barPath(k, pts, stopAt, ax, more) {
   for (let i = 1; i < pts.length; i++) { const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], c0 = ax === 'x' ? x0 : z0, c1 = ax === 'x' ? x1 : z1, w0 = ax === 'x' ? z0 : x0, w1 = ax === 'x' ? z1 : x1;
     if (stopAt != null && Math.abs(w0 - w1) < .01 && (stopAt - c0) * (stopAt - c1) <= 0) { L.stop = L.cum[i - 1] + Math.abs(stopAt - c0); break; } }
   if (L.stop != null) L.stops.push({ s: L.stop, sem: 0 });
-  (more || []).forEach(([sa, a2, sem]) => { for (let i = 1; i < pts.length; i++) { const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], c0 = a2 === 'x' ? x0 : z0, c1 = a2 === 'x' ? x1 : z1, w0 = a2 === 'x' ? z0 : x0, w1 = a2 === 'x' ? z1 : x1;
+  (more || []).forEach(([sa, a2, sem, i0]) => { for (let i = i0 || 1; i < pts.length; i++) { const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], c0 = a2 === 'x' ? x0 : z0, c1 = a2 === 'x' ? x1 : z1, w0 = a2 === 'x' ? z0 : x0, w1 = a2 === 'x' ? z1 : x1;
     if (Math.abs(w0 - w1) < .01 && (sa - c0) * (sa - c1) <= 0) { L.stops.push({ s: L.cum[i - 1] + Math.abs(sa - c0), sem }); break; } } });
   return L;
 }
@@ -2532,6 +2534,7 @@ function barMiniTick() {
   el.hidden = !on; document.body.classList.toggle('minimap', on && !isTouch);
   if (!on) return;
   const cls = isTouch ? 'tl' : 'bl'; if (el.className !== cls) el.className = cls;
+  { const rg = liIn(P.x, P.z) ? 'li' : 'main'; if (MINI.rg !== rg) { MINI.rg = rg; Object.assign(MINI, rg === 'li' ? { X0: LI.X - 80, X1: LI.X + 80, Z0: LI.Z - 135, Z1: LI.Z + 90 } : { X0: -205, X1: 215, Z0: -210, Z1: 150 }); MINI.base = null; } }
   if (!MINI.base || MINI.world !== W) { barMiniBase(); MINI.world = W; }
   barMiniDraw(el.querySelector('.mm-map'));
   const m = Math.floor((W.hour || 0) * 60); if (m !== MINI.min) { MINI.min = m; barWatchDraw(el.querySelector('.mm-watch'), W.hour || 0); }
@@ -2630,16 +2633,16 @@ function openBarrioMap() {
     el.addEventListener('click', e => { if (e.target === el) closeModal(); });
   }
   el.querySelector('#bmap-k').textContent = GP.on ? 'Select o B · cerrar' : isTouch ? 'Toca fuera para cerrar' : 'M o Esc · cerrar';
-  const mcv = el.querySelector('canvas'); mcv._hl = -1; mcv._region = mueIn(P.x, P.z) ? 'docks' : 'mid';
+  const mcv = el.querySelector('canvas'); mcv._hl = -1; mcv._region = liIn(P.x, P.z) ? 'li' : mueIn(P.x, P.z) ? 'docks' : 'mid';
   let tabs = el.querySelector('.bmap-tabs');
   if (!tabs) {   // dos hojas del plano: Midtown y los muelles del Hudson
     tabs = document.createElement('div'); tabs.className = 'bmap-tabs'; tabs.setAttribute('role', 'tablist'); tabs.style.cssText = 'display:flex;gap:8px;justify-content:center;margin:0 0 8px';
-    [['mid', 'Midtown'], ['docks', 'Los muelles del Hudson']].forEach(([k, t]) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.rg = k; b.textContent = t; b.setAttribute('role', 'tab');
+    [['mid', 'Midtown'], ['docks', 'Los muelles del Hudson'], ['li', 'Little Italy']].forEach(([k, t]) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.rg = k; b.textContent = t; b.setAttribute('role', 'tab');
       b.style.cssText = 'font:15px Georgia,serif;padding:6px 16px;border:1px solid #8a7a5a;border-radius:3px;cursor:pointer;color:#2a241c;background:#efe6cc';
       b.onclick = (e) => { e.stopPropagation(); mcv._region = k; mcv._hl = -1; drawBarrioMap(mcv); syncTabs(); }; tabs.appendChild(b); });
     mcv.parentNode.insertBefore(tabs, mcv);
   }
-  const syncTabs = () => { const h = el.querySelector('#bmap-h'); if (h) h.textContent = mcv._region === 'docks' ? 'Manhattan · Los muelles del Hudson' : 'Manhattan · Midtown y Park Avenue'; tabs.querySelectorAll('button').forEach(b => { const on = b.dataset.rg === mcv._region; b.setAttribute('aria-selected', on); b.style.background = on ? '#2a241c' : '#efe6cc'; b.style.color = on ? '#efe6cc' : '#2a241c'; }); };
+  const syncTabs = () => { const h = el.querySelector('#bmap-h'); if (h) h.textContent = mcv._region === 'docks' ? 'Manhattan · Los muelles del Hudson' : mcv._region === 'li' ? 'Manhattan · Little Italy' : 'Manhattan · Midtown y Park Avenue'; tabs.querySelectorAll('button').forEach(b => { const on = b.dataset.rg === mcv._region; b.setAttribute('aria-selected', on); b.style.background = on ? '#2a241c' : '#efe6cc'; b.style.color = on ? '#efe6cc' : '#2a241c'; }); };
   tabs.querySelectorAll('button').forEach(b => { b.onclick = (e) => { e.stopPropagation(); mcv._region = b.dataset.rg; mcv._hl = -1; drawBarrioMap(mcv); syncTabs(); }; });
   syncTabs(); drawBarrioMap(mcv); mapHook(mcv);
   openModal(el, () => {});
@@ -2649,7 +2652,8 @@ function drawBarrioMap(cv, o) {
   o = o || {}; const mini = !!o.mini;
   const c = cv.getContext('2d'), Wd = cv.width, Hd = cv.height;
   const rg = o.region || cv._region || 'mid', dk = !mini && rg === 'docks';
-  const X0 = mini ? o.X0 : dk ? -200 : -158, X1 = mini ? o.X1 : dk ? 20 : 200, Z0 = mini ? o.Z0 : dk ? -196 : -75, Z1 = mini ? o.Z1 : dk ? 12 : 75, sc = mini ? o.sc : Math.min(Wd / (X1 - X0), Hd / (Z1 - Z0));
+  const li = !mini && rg === 'li';
+  const X0 = mini ? o.X0 : li ? LI.X - 75 : dk ? -200 : -158, X1 = mini ? o.X1 : li ? LI.X + 75 : dk ? 20 : 200, Z0 = mini ? o.Z0 : li ? LI.Z - 130 : dk ? -196 : -75, Z1 = mini ? o.Z1 : li ? LI.Z + 75 : dk ? 12 : 75, sc = mini ? o.sc : Math.min(Wd / (X1 - X0), Hd / (Z1 - Z0));
   const mx = x => (x - X0) * sc + (Wd - (X1 - X0) * sc) / 2, mz = z => (z - Z0) * sc + (Hd - (Z1 - Z0) * sc) / 2;
   if (mini) { const c0 = c.fillText; c.fillText = function () { if (o.text) c0.apply(c, arguments); }; }
   c.fillStyle = '#e6dcc4'; c.fillRect(0, 0, Wd, Hd);
@@ -2664,7 +2668,7 @@ function drawBarrioMap(cv, o) {
   c.fillStyle = '#9fb3bc'; c.fillRect(0, 0, mx(-111), Hd); c.fillStyle = '#b89a70'; c.fillRect(mx(-150), mz(-4), (39) * sc, 8 * sc);
   c.fillStyle = '#7d4a3a'; c.fillRect(mx(-142), mz(-10.9), 15 * sc, 4.6 * sc);
   c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; c.textAlign = 'center'; c.save(); c.translate(mx(dk ? -185 : -135), mz(dk ? -40 : -30)); c.rotate(-Math.PI / 2); c.fillText('Río Hudson', 0, 0); c.restore();
-  barDocksMap(c, mx, mz, sc, { region: dk ? 'docks' : 'mid' });
+  barDocksMap(c, mx, mz, sc, { region: dk ? 'docks' : 'mid' }); liMap(c, mx, mz, sc);
   c.fillStyle = '#f2e9d2'; c.fillRect(mx(-22), mz(17), 14 * sc, 6.5 * sc);
   BAR.blocks.forEach(([x0, x1, z0, z1]) => { c.fillStyle = '#c4b590'; c.fillRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); c.strokeStyle = 'rgba(90,80,60,.35)'; c.strokeRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); });
   const [px0, px1, pz0, pz1] = BAR.park; c.fillStyle = '#b9c79a'; c.fillRect(mx(px0), mz(pz0), (px1 - px0) * sc, (pz1 - pz0) * sc);
@@ -2694,7 +2698,7 @@ function drawBarrioMap(cv, o) {
   pin(-11.5, -6, 'Periódicos', '#6a5a3a', '¶');
   pin(-5.55, 10.6, 'Teléfono', '#6a1a14', '☎');
   pin(-130, 0, 'Muelle 84', '#3a4a5a', '⚓');
-  barDocksPins(pin);
+  barDocksPins(pin); liPins(pin);
   pin(107, -20, 'The Meridian', '#1f3a2c', '♜');
   pin(143, 22, 'Instituto forense', '#3a4a4e', '✚');
   pin(96, -70, '1040 Madison', '#5a1e1a', '♞');
@@ -3519,7 +3523,7 @@ function parkCentral(g) {
 // mediana ajardinada con setos, flores y farolas dobles; pasos de peatones a media manzana
 function parkMedian(g, q, zebra) {
   const kerb = M(0x8a857a, { roughness: .8 }), grass = M(0x3a5230, { roughness: 1 }), hedge = M(0x2a4024, { roughness: 1 });
-  const hw = PARK.med, segs = [[PARK.Z0 - 40, -60 - 1.6], [-60 + 1.6, -5.5], [5.5, 60 - 1.6], [60 + 1.6, PARK.Z1]];
+  const hw = PARK.med, segs = [[PARK.Z0 - 40, PARK.Z0 - 1], [PARK.Z0 + 21, -60 - 1.6], [-60 + 1.6, -5.5], [5.5, 60 - 1.6], [60 + 1.6, PARK.Z1]];   // hueco para el cambio de sentido
   const flowers = [];
   segs.forEach(([a, b]) => {
     const L = b - a, cz = (a + b) / 2;
@@ -3556,6 +3560,21 @@ function parkBarrier(g, x, z, rot, n) {   // vallas pequeñas (solo aceras): los
   for (let i = 0; i < n; i++) { const s = new THREE.Group(); s.position.x = (i - (n - 1) / 2) * 2.4; b.add(s); box(2.1, .22, .08, i % 2 ? saw : sawR, 0, .95, 0, s); [-1, 1].forEach(o => { const l = box(.08, 1.0, .08, M(0x3a3028), o * .85, .5, 0, s); l.rotation.z = o * .12; }); }
   b.traverse(o => { o.raycast = _noRay; });
 }
+// cambio de sentido al final de Park Avenue: hueco en la mediana, flecha pintada y señal
+function parkUturn(g) {
+  const X = PARK.X, z = PARK.Z0 + 10;
+  const arrow = new THREE.MeshBasicMaterial({ map: ctex(256, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = 'rgba(232,224,200,.75)'; c.lineWidth = 22; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(196, 236); c.lineTo(196, 110); c.arc(128, 110, 68, 0, Math.PI, true); c.lineTo(60, 170); c.stroke(); c.fillStyle = 'rgba(232,224,200,.75)'; c.beginPath(); c.moveTo(60, 236); c.lineTo(22, 160); c.lineTo(98, 160); c.closePath(); c.fill(); }),
+    transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const p = plane(6, 6, arrow, X + 6.2, .008, PARK.Z0 + 30, -Math.PI / 2); p.raycast = _noRay;
+  const sg = new THREE.Group(); sg.position.set(X, 0, PARK.Z0 + 21.6); g.add(sg);
+  cyl(.06, .06, 2.6, M(0x1d2420, { metalness: .5 }), 0, 1.3, 0, sg, 8);
+  const tx = textTex(256, 256, '#1e4a8a', (c, w, h) => { c.fillStyle = '#efe6cc'; c.font = '700 34px Georgia'; c.textAlign = 'center'; c.fillText('CAMBIO DE', w / 2, 200); c.fillText('SENTIDO', w / 2, 236);
+    c.strokeStyle = '#efe6cc'; c.lineWidth = 16; c.beginPath(); c.moveTo(168, 150); c.lineTo(168, 90); c.arc(128, 90, 40, 0, Math.PI, true); c.lineTo(88, 120); c.stroke(); c.fillStyle = '#efe6cc'; c.beginPath(); c.moveTo(88, 160); c.lineTo(64, 116); c.lineTo(112, 116); c.closePath(); c.fill(); });
+  const b = plane(1.1, 1.1, M(0xffffff, { map: tx }), 0, 2.6, .04, 0, Math.PI, sg); const b2 = plane(1.1, 1.1, M(0xffffff, { map: tx }), 0, 2.6, -.04, 0, 0, sg);
+  sg.traverse(o => { o.raycast = _noRay; }); col(X - .12, PARK.Z0 + 21.48, X + .12, PARK.Z0 + 21.72);
+  const sg2 = plane(6, .8, M(0xffffff, { map: barSign('PARK AVENUE CORTADA', 'OBRAS · USE EL CAMBIO DE SENTIDO', 6, .8, '#e8d890', '#1a1410', '700 110px Georgia, serif') }), X, 1.7, PARK.Z0 + .1, 0, 0); sg2.raycast = _noRay;
+}
 /* ---------- construcción de toda la zona (dentro de buildBarrio, con el registro de solares activo) ---------- */
 function barPark(g, q, h) {
   const F = {};
@@ -3579,7 +3598,8 @@ function barPark(g, q, h) {
   });
   parkMedian(g, q, h.zebra);
   parkStreetSign(g, PARK.X - PARK.HW - .6, -5.6); parkStreetSign(g, PARK.X + PARK.HW + .6, 5.6);
-  parkBarrier(g, PARK.X - PARK.HW - 1.5, PARK.Z0, 0, 2); parkBarrier(g, PARK.X + PARK.HW + 1.5, PARK.Z0, 0, 2); parkBarrier(g, PARK.X, PARK.Z0, 0, 2);
+  parkBarrier(g, PARK.X - PARK.HW - 1.5, PARK.Z0, 0, 2); parkBarrier(g, PARK.X + PARK.HW + 1.5, PARK.Z0, 0, 2); parkBarrier(g, PARK.X, PARK.Z0, 0, 9);   // Park Avenue cortada al norte
+  parkUturn(g);
   parkBarrier(g, PARK.EAST, -6.5, Math.PI / 2, 2); parkBarrier(g, PARK.EAST, 6.5, Math.PI / 2, 2);
   // un portero en la puerta de The Meridian y otro en un edificio cualquiera
   W.meridianDoorman = parkDoorman(g, F.w, 20 + 2.6, -2.1);
@@ -3615,7 +3635,7 @@ function barCullTick(dt) {
     else if (it.c) { it.o.visible = true; it.c = false; }
   }
 }
-function barZone() { return mueIn(P.x, P.z) && P.x < -93 ? 'Los muelles del Hudson' : P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
+function barZone() { return liIn(P.x, P.z) ? 'Little Italy, Manhattan' : mueIn(P.x, P.z) && P.x < -93 ? 'Los muelles del Hudson' : P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
 
 /* =========================================================
    LOS MUELLES DEL HUDSON (v2.2): la calle del muelle sigue hacia el norte.
@@ -3857,7 +3877,7 @@ function barDocks(g, q) {
       const l = new THREE.PointLight(0xffd8a0, 0, 7, 2); l.position.set(-93.5, 3, z); g.add(l); W.dockFx.push(l); });
     plane(9, 1.1, mueText('LONJA DEL HUDSON', 'PESCADO FRESCO · TODOS LOS DÍAS DESDE LAS 4', 9, 1.1, '#e2d6b8', '#2a1e14', '700 90px Georgia, serif'), -95.04, 6.6, -115, 0, -Math.PI / 2).raycast = _noRay;
     [[-96.2, -104], [-96.2, -105.4], [-96.9, -104.7]].forEach(([x, z], i) => { box(1, .6, .8, M(0xc8d0d4, { roughness: .3 }), x, .45 + (i === 2 ? .6 : 0), z).raycast = _noRay; col(x - .5, z - .4, x + .5, z + .4); });
-    const tr = mueTruck(0xd8d2c4, 'PESCADOS O\'NEILL'); tr.position.set(-99.6, 0, -125); tr.rotation.y = Math.PI / 2; g.add(tr); col(-100.9, -129, -98.3, -120.6);
+    const tr = mueTruck(0xd8d2c4, 'PESCADOS O\'NEILL'); tr.position.set(-113.8, 0, -109); tr.rotation.y = Math.PI / 2; g.add(tr); col(-115.1, -112.9, -112.5, -105.1);
   }
   // el patio de Transportes Ferraro (vallado: se ve, pero no se entra)
   {
@@ -3880,9 +3900,10 @@ function barDocks(g, q) {
   // el final de la calle del muelle: valla y caballetes
   {
     const saw = M(0xe8e2d0, { roughness: .7 }), sawR = M(0xb02a1e, { roughness: .7 });
-    for (let i = -2; i <= 2; i++) { const s = new THREE.Group(); s.position.set(-103 + i * 3, 0, ZN + 1.2); g.add(s); box(2.6, .22, .08, i % 2 ? saw : sawR, 0, .95, 0, s); [-1, 1].forEach(o => { const l = box(.08, 1.0, .08, M(0x3a3028), o * 1.1, .5, 0, s); l.rotation.z = o * .12; }); s.traverse(o => { o.raycast = _noRay; }); }
-    const sg = plane(3.6, .9, mueText('FIN DEL MUELLE', 'AUTORIDAD PORTUARIA · SOLO PERSONAL AUTORIZADO', 3.6, .9, '#e8d890', '#1a1410', '700 110px Georgia, serif'), -103, 1.75, ZN + 1.26, 0, 0); sg.raycast = _noRay;
-    for (let x = -110; x <= -96; x += 3.5) { const s = box(3.4, 6 + Math.random() * 4, 14, M(0x3a302a, { roughness: .9 }), x, 4, ZN - 14); s.raycast = _noRay; }
+    for (const i of [-2.3, 2.3]) { const s = new THREE.Group(); s.position.set(-103 + i * 3, 0, ZN + 1.2); g.add(s); box(2.6, .22, .08, i % 2 ? saw : sawR, 0, .95, 0, s); [-1, 1].forEach(o => { const l = box(.08, 1.0, .08, M(0x3a3028), o * 1.1, .5, 0, s); l.rotation.z = o * .12; }); s.traverse(o => { o.raycast = _noRay; }); }
+    const gate = M(0x3a4a3a, { roughness: .7 }); box(2.2, 2.6, 2.2, gate, -96.6, 1.45, ZN - .6).raycast = _noRay; box(2.6, .2, 2.6, M(0x2a2a2a), -96.6, 2.85, ZN - .6).raycast = _noRay;
+    const boom = new THREE.Group(); boom.position.set(-98, 1.1, ZN - .6); g.add(boom); const bm = box(10, .14, .14, sawR, -5, 0, 0, boom); bm.raycast = _noRay; boom.rotation.z = -1.25;   // barrera levantada
+    const sg = plane(3.6, .9, mueText('ZONA PORTUARIA', 'AUTORIDAD PORTUARIA · SOLO PERSONAL AUTORIZADO', 3.6, .9, '#e8d890', '#1a1410', '700 110px Georgia, serif'), -96.6, 3.5, ZN + .52, 0, 0); sg.raycast = _noRay;
   }
 
   // ---- detrás de la acera este, la ciudad sigue (manzanas de relleno: no se puede llegar a ellas)
@@ -4076,6 +4097,326 @@ async function mueArm() {
 }
 
 /* =========================================================
+   LITTLE ITALY (v2.3): al otro lado del túnel de Park Avenue.
+   Mulberry Street (norte-sur) con la fiesta de San Gennaro, Grand Street cortada a los dos lados,
+   la piazza con la fuente y la iglesia, el Caffè Napoli (se entra) y la trattoria de Mamma Rosa.
+   Está lejos del resto del mapa (x ≈ 600): se llega por el túnel, andando o en coche.
+   ========================================================= */
+const LI = { X: 600, Z: 0 };
+function liIn(x, z) { return x > LI.X - 90 && x < LI.X + 90 && z > LI.Z - 150 && z < LI.Z + 95; }
+function liFrame(kind) {           // marco de acera como barFrame: origen en el bordillo, +z local hacia la calle, fachada en z local = -3
+  const f = new THREE.Group(), X = LI.X, Z = LI.Z;
+  if (kind === 'w') { f.position.set(X - 4, 0, 0); f.rotation.y = Math.PI / 2; }        // fachada oeste de Mulberry (mira al este)
+  else if (kind === 'e') { f.position.set(X + 4, 0, 0); f.rotation.y = -Math.PI / 2; }  // fachada este (mira al oeste)
+  else if (kind === 's') { f.position.set(0, 0, Z - 6); f.rotation.y = Math.PI; }        // acera sur de Grand Street (mira al norte)
+  else if (kind === 'gn') { f.position.set(0, 0, Z - 14); f.rotation.y = 0; }             // acera norte de Grand Street (mira al sur)
+  else { f.position.set(0, 0, Z - 111); f.rotation.y = 0; }                              // la iglesia (mira al sur)
+  W.group.add(f); f.updateMatrixWorld(true); return f;
+}
+const liLX = { w: z => -z, e: z => z, s: x => -x, gn: x => x, n: x => x };   // de coordenada del mundo a x local de cada marco
+
+function barLittleItaly(g, q) {
+  const X = LI.X, Z = LI.Z, r = (m) => { m.raycast = _noRay; return m; };
+  const F = { w: liFrame('w'), e: liFrame('e'), s: liFrame('s'), gn: liFrame('gn'), n: liFrame('n') };
+  // ---- suelo: adoquines viejos en la calzada, aceras de losas
+  const cob = M(0xffffff, { map: ctex(128, 128, (c, w, h) => { c.fillStyle = '#2a2826'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8) % 2 ? 4 : 0; x < w; x += 8) { const k = 34 + Math.random() * 18; c.fillStyle = `rgb(${k + 6},${k + 3},${k})`; c.fillRect(x + .5, y + .5, 7, 7); } }, [40, 60]), roughness: .45, metalness: .1 });
+  r(plane(140, 230, cob, X, 0, Z - 30, -Math.PI / 2));
+  const conc = M(0xffffff, { map: tiles('#5c5a56', '#545250', 4, [1, 1]), roughness: .55, metalness: .1 });
+  const slab = (x0, x1, z0, z1) => { const m = conc.clone(); m.map = conc.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.raycast = _noRay; b.castShadow = false; };
+  slab(X - 7, X - 4, Z - 3, Z + 56); slab(X + 4, X + 7, Z - 3, Z + 56); slab(X - 7, X - 4, Z - 88, Z - 17); slab(X + 4, X + 7, Z - 88, Z - 17);
+  slab(X - 50, X - 7, Z - 6, Z - 3); slab(X + 7, X + 50, Z - 6, Z - 3); slab(X - 50, X - 7, Z - 17, Z - 14); slab(X + 7, X + 50, Z - 17, Z - 14);
+  slab(X - 14, X - 7, Z - 114, Z - 88); slab(X + 7, X + 14, Z - 114, Z - 88); slab(X - 14, X + 14, Z - 114, Z - 111);
+  // ---- colisiones (manzanas, final de Grand Street, la piazza y el túnel)
+  col(X - 70, Z - 3, X - 7, Z + 56); col(X + 7, Z - 3, X + 70, Z + 56); col(X - 70, Z - 88, X - 7, Z - 17); col(X + 7, Z - 88, X + 70, Z - 17);
+  col(X - 70, Z - 17, X - 50, Z - 3); col(X + 50, Z - 17, X + 70, Z - 3);
+  col(X - 70, Z - 140, X - 14, Z - 88); col(X + 14, Z - 140, X + 70, Z - 88); col(X - 70, Z - 160, X + 70, Z - 114);
+  col(X - 70, Z + 56, X - 4.2, Z + 90); col(X + 4.2, Z + 56, X + 70, Z + 90); col(X - 4.2, Z + 61, X + 4.2, Z + 90);
+  // ---- casas de vecinos: ladrillo, cornisas, escaleras de incendios y tiendas a pie de calle
+  const bricks = [0x6a3a2c, 0x7a4a34, 0x5a3a30, 0x8a5a40, 0x6e5040, 0x4e3a34];
+  const shopsW = { 40: ['SALUMERIA DI MARCO', 'FORMAGGI · PROSCIUTTI'], 22: ['CAFFÈ NAPOLI', 'ESPRESSO · PASTICCERIA'], 6: ['FARMACIA', null], '-30': ['TABACCHI · GIORNALI', null], '-56': ['CIRCOLO SOCIALE', 'SOLO SOCI'], '-76': ['CALZOLAIO', 'SE ARREGLAN ZAPATOS'] };
+  const shopsE = { 44: ['BARBIERE GENNARO', 'AFEITADO · CORTE'], 26: ['PASTICCERIA SANTA LUCIA', 'CANNOLI · SFOGLIATELLE'], 10: ['TRATTORIA MAMMA ROSA', 'CUCINA CASALINGA'], '-34': ['LATTERIA', 'LECHE · HUEVOS'], '-62': ['FERRAMENTA RUSSO', null] };
+  const awnCols = [['#1e5a2a', '#e8e0cc'], ['#a8261c', '#e8e0cc'], ['#1e3a5a', '#e8e0cc'], ['#7a4a1e', '#e8d8a8']];
+  const awnTex = awnCols.map(([a, b]) => ctex(64, 32, (c, w, h) => { for (let x = 0; x < w; x += 16) { c.fillStyle = (x / 16) % 2 ? b : a; c.fillRect(x, 0, 16, h); } c.fillStyle = a; for (let x = 0; x < w; x += 8) { c.beginPath(); c.arc(x + 4, h - 2, 4, 0, Math.PI); c.fill(); } }));
+  const shopWin = new THREE.MeshStandardMaterial({ color: 0x1a1612, emissive: 0xe8a860, emissiveIntensity: .38 }); (W.winMats = W.winMats || []).push([shopWin, .38]);
+  const iron = M(0x15171a, { metalness: .6, roughness: .5 });
+  const fire = [];
+  const row = (f, a, b, shops, hMin, hMax) => {   // a..b: tramo en x local del marco
+    let x = a, n = 0;
+    while (b - x > 5) {
+      const w = Math.min(b - x, rnd(8, 12)), cx = x + w / 2, h = rnd(hMin, hMax), col0 = bricks[(((n + Math.floor(x)) % bricks.length) + bricks.length) % bricks.length];
+      const bld = building(f, cx, -3 - 6, w, 12, h, n % 4); bld.raycast = _noRay; bld.material.color.setHex(col0);
+      r(box(w + .3, .5, .6, M(0x3a2e26, { roughness: .8 }), cx, h - .3, -3.1, f)); r(box(w + .2, .25, .4, M(0x3a2e26), cx, 3.6, -2.95, f));
+      // tienda en la planta baja (con toldo de rayas) o portal de vecinos
+      const key = Object.keys(shops).find(k => Math.abs(cx - (f === F.w ? -(+k) : +k)) < w / 2 - .5);
+      if (key) {
+        const [t, sub] = shops[key];
+        r(plane(w - 2.4, 2.4, shopWin, cx, 1.55, -2.96, 0, 0, f));
+        r(plane(w - 1.6, .7, new THREE.MeshBasicMaterial({ map: barSign(t, sub, w - 1.6, .7, '#1e1a14', '#e8c87a', '700 80px Georgia, serif') }), cx, 3.15, -2.94, 0, 0, f));
+        const aw = plane(w - 1.4, 1.5, M(0xffffff, { map: awnTex[n % awnTex.length], side: THREE.DoubleSide, roughness: .8 }), cx, 2.55, -2.3, -Math.PI / 2 + .55, 0, f); r(aw);
+      } else { r(plane(1.4, 2.4, M(0x2a1e14, { roughness: .7 }), cx, 1.3, -2.97, 0, 0, f)); r(box(1.8, .15, .6, M(0x6a645a), cx, .23, -2.7, f)); }
+      // escalera de incendios en algunas fachadas
+      if (n % 2 === 0 && h > 12) { for (let y = 4.6; y < h - 2; y += 3.1) { const p = f.localToWorld(V3(cx, y, -2.45)); fire.push([p.x, p.y, p.z, f.rotation.y]); } }
+      x += w; n++;
+    }
+  };
+  const L = liLX;
+  row(F.w, L.w(Z + 56), L.w(Z - 3), shopsW, 13, 19); row(F.w, L.w(Z - 17), L.w(Z - 88), shopsW, 13, 20);
+  row(F.e, L.e(Z - 3), L.e(Z + 56), shopsE, 13, 19); row(F.e, L.e(Z - 88), L.e(Z - 17), shopsE, 13, 20);
+  row(F.s, L.s(X - 19), L.s(X - 50), {}, 12, 17); row(F.s, L.s(X + 50), L.s(X + 19), {}, 12, 17);
+  row(F.gn, L.gn(X - 50), L.gn(X - 19), {}, 12, 17); row(F.gn, L.gn(X + 19), L.gn(X + 50), {}, 12, 17);
+  // escaleras de incendios: plataforma, barandilla y tramo inclinado (agrupadas por orientación)
+  fire.forEach(([x, y, z, ry]) => { const e = new THREE.Group(); e.position.set(x, y, z); e.rotation.y = ry; g.add(e);
+    box(3.2, .07, .9, iron, 0, 0, 0, e); box(3.2, .05, .05, iron, 0, .9, .44, e); [-1.58, 1.58].forEach(xx => box(.05, .9, .9, iron, xx, .45, 0, e));
+    const st = box(3.4, .05, .7, iron, .4, -1.5, .1, e); st.rotation.z = .78;
+    e.traverse(o => { o.raycast = _noRay; }); });
+  // la ciudad sigue detrás de las casas
+  for (let z = Z - 130; z < Z + 75; z += 24) for (const x of [X - 46, X - 28, X + 28, X + 46]) {
+    const w = rnd(14, 18), d = rnd(16, 20); if (!barFree(x - w / 2, z - d / 2, x + w / 2, z + d / 2)) continue;
+    const b = building(g, x, z, w, d, rnd(18, 40), Math.floor(Math.random() * 4)); b.raycast = _noRay; b.material.color.setHex(bricks[Math.floor(Math.random() * bricks.length)]);
+  }
+  // ---- la fiesta de San Gennaro: arcos de bombillas sobre Mulberry y ropa tendida
+  const bulbs = [], bulbsR = [];
+  for (const z of [Z + 44, Z + 30, Z + 16, Z - 26, Z - 44, Z - 62, Z - 78]) {
+    for (let i = 0; i <= 26; i++) { const t = i / 26, a = Math.PI * t, x = X - 6.4 * Math.cos(a), y = 4.6 + 2.6 * Math.sin(a); (i % 3 ? bulbs : bulbsR).push([x, y, z]); }
+    [X - 6.4, X + 6.4].forEach(x => { r(cyl(.06, .08, 4.6, M(0xd8d2c4, { roughness: .5 }), x, 2.3, z, null, 6)); col(x - .12, z - .12, x + .12, z + .12); });
+  }
+  barInst(new THREE.SphereGeometry(.085, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffe0a0 }), bulbs);
+  barInst(new THREE.SphereGeometry(.085, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff5a4a }), bulbsR);
+  r(plane(9, 1.1, new THREE.MeshBasicMaterial({ map: barSign('FESTA DI SAN GENNARO', 'MULBERRY STREET · DEL 12 AL 22 DE SEPTIEMBRE', 9, 1.1, '#a8261c', '#f2e6c4', '700 90px Georgia, serif'), side: THREE.DoubleSide }), X, 7.9, Z - 2.6, 0, 0));
+  const cloth = [[0xe8e2d4, .9, .7], [0x5a7aa8, .7, .9], [0xc84a3a, .6, .6], [0xe8d8a0, .8, .5], [0x3a5a3a, .7, .8]];
+  for (const [z, y] of [[Z + 36, 10.5], [Z + 20, 11.5], [Z - 38, 10.8], [Z - 70, 11.6]]) {
+    const ln = cyl(.012, .012, 14, M(0xd8d2c4), X, y, z, null, 4); ln.rotation.z = Math.PI / 2; r(ln);
+    for (let i = 0; i < 7; i++) { const [c, w, h] = cloth[(((i + Math.floor(z)) % cloth.length) + cloth.length) % cloth.length]; r(plane(w, h, M(c, { side: THREE.DoubleSide, roughness: .9 }), X - 5.5 + i * 1.7 + Math.random() * .4, y - h / 2 - .02, z, 0, 0)); }
+  }
+  // ---- farolas
+  const lamps = []; for (let z = Z + 50; z > Z - 86; z -= 14) { if (z < Z - 1 && z > Z - 19) continue; lamps.push([X - 4.5, 0, z], [X + 4.5, 0, z + 7]); }
+  for (const x of [X - 40, X - 22, X + 22, X + 40]) lamps.push([x, 0, Z - 3.6]);
+  lamps.push([X - 12.4, 0, Z - 92], [X + 12.4, 0, Z - 92], [X - 12.4, 0, Z - 109], [X + 12.4, 0, Z - 109]);
+  (W.parkLamps = W.parkLamps || []).push(...lamps);
+  // ---- la piazza: rotonda con la fuente del santo y la iglesia al fondo
+  {
+    const stone = M(0xb8b0a0, { roughness: .8 }), stoneD = M(0x8a8478, { roughness: .85 });
+    r(cyl(4.6, 4.8, .3, stoneD, X, .15, Z - 100, null, 32)); r(cyl(3.6, 3.7, .7, stone, X, .5, Z - 100, null, 28));
+    const wm = new THREE.Mesh(new THREE.CircleGeometry(3.4, 28), M(0x0a1016, { roughness: .05, metalness: .8 })); wm.rotation.x = -Math.PI / 2; wm.position.set(X, .82, Z - 100); r(wm); g.add(wm);
+    r(cyl(.4, .6, 2.4, stone, X, 1.8, Z - 100, null, 12)); r(cyl(1.0, .5, .3, stone, X, 3.1, Z - 100, null, 16));
+    const saint = new THREE.Group(); saint.position.set(X, 3.25, Z - 100); g.add(saint);
+    cyl(.32, .42, 1.5, stone, 0, .75, 0, saint, 10); sphere(.2, stone, 0, 1.68, 0, saint, 10, 8); cyl(.24, .18, .14, stone, 0, 1.9, 0, saint, 10);
+    const arm = cyl(.07, .07, .7, stone, .26, 1.3, .1, saint, 6); arm.rotation.z = -1; saint.traverse(o => { o.raycast = _noRay; });
+    col(X - 4.4, Z - 104.4, X + 4.4, Z - 95.6);
+    W.liFount = puffs(g, 8, { size: .25, rise: .8, alpha: .12, dur: 1.4, drift: .2, color: 0xb8c8d8 }); W.liFount.origin.set(X, 3.4, Z - 100); W.liFount.on = true;
+    // la iglesia
+    const ch = M(0xd8ccb0, { map: tiles('#d8ccb0', '#cfc2a4', 4, [4, 4]), roughness: .85 });
+    r(box(22, 18, 10, ch, X, 9, Z - 119)); r(box(23, .8, 10.6, stoneD, X, 18.2, Z - 119));
+    const tri = new THREE.Shape(); tri.moveTo(-11.5, 0); tri.lineTo(11.5, 0); tri.lineTo(0, 6); tri.closePath();
+    const ped = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 1, bevelEnabled: false }), ch); ped.position.set(X, 18.6, Z - 115); r(ped); g.add(ped);
+    r(box(5, 26, 5, ch, X + 13.5, 13, Z - 120)); const tr = new THREE.Mesh(new THREE.ConeGeometry(3.6, 6, 4), M(0x5a6a5a, { roughness: .6, metalness: .3 })); tr.rotation.y = Math.PI / 4; tr.position.set(X + 13.5, 29, Z - 120); r(tr); g.add(tr);
+    const rose = new THREE.Mesh(new THREE.CircleGeometry(2, 24), new THREE.MeshStandardMaterial({ color: 0x3a1a2a, emissive: 0xffa060, emissiveIntensity: .8, map: ctex(128, 128, (c, w, h) => { c.fillStyle = '#5a2a4a'; c.fillRect(0, 0, w, h); for (let i = 0; i < 12; i++) { c.strokeStyle = ['#e8c050', '#3a6aa8', '#a8261c'][i % 3]; c.lineWidth = 7; c.beginPath(); c.moveTo(64, 64); c.lineTo(64 + Math.cos(i / 12 * 6.283) * 64, 64 + Math.sin(i / 12 * 6.283) * 64); c.stroke(); } }) }));
+    (W.winMats = W.winMats || []).push([rose.material, .8]); rose.position.set(X, 12.5, Z - 113.97); r(rose); g.add(rose);
+    r(plane(3.2, 5.2, M(0x2a1a10, { roughness: .7 }), X, 2.75, Z - 113.97, 0, 0));
+    const arcD = new THREE.Mesh(new THREE.CircleGeometry(1.6, 16, 0, Math.PI), M(0x2a1a10)); arcD.position.set(X, 5.35, Z - 113.97); r(arcD); g.add(arcD);
+    for (let i = 0; i < 3; i++) r(box(10 - i * 1.2, .2, 1, stoneD, X, .25 + i * .2, Z - 113.3 + (2 - i) * .55));
+    r(plane(8, .8, new THREE.MeshBasicMaterial({ map: barSign('CHIESA DI SAN GENNARO', null, 8, .8, '#d8ccb0', '#3a2e1e', '700 90px Georgia, serif') }), X, 9.4, Z - 113.96, 0, 0));
+    barDoor(F.n, X, 3, { label: 'Entrar en la iglesia de San Gennaro', use: async () => { await narr(W.hour > 7 && W.hour < 20 ? 'Dentro huele a cera y a incienso. Una anciana reza el rosario en italiano, muy deprisa, como si tuviera prisa por llegar al final.' : 'La puerta está cerrada. Junto al picaporte, alguien ha dejado un ramito de flores y una vela que ya se ha apagado.'); endDialog(); } });
+  }
+  // ---- el túnel de vuelta a Park Avenue (al sur de Mulberry)
+  {
+    const stone = M(0xcbbd9e, { roughness: .85 }), stoneD = M(0xa8987a, { roughness: .85 }), dark = new THREE.MeshBasicMaterial({ color: 0x07080a });
+    r(box(30, 14, 12, stone, X, 7, Z + 62)); r(box(30.6, .8, 12.6, stoneD, X, 14.2, Z + 62));
+    r(plane(8, 6.4, dark, X, 3.2, Z + 55.97, 0, Math.PI)); const arc = new THREE.Mesh(new THREE.CircleGeometry(4, 20, 0, Math.PI), dark); arc.position.set(X, 6.4, Z + 55.97); arc.rotation.y = Math.PI; r(arc); g.add(arc);
+    r(plane(8, 6.4, dark, X, 3.2, Z + 55.97, 0, 0)); const arc2 = arc.clone(); arc2.rotation.y = 0; g.add(arc2);
+    r(box(9, .5, .5, stoneD, X, 10.8, Z + 55.8));
+    r(plane(9, 1.1, new THREE.MeshBasicMaterial({ map: barSign('TÚNEL DE PARK AVENUE', '↑ MIDTOWN · NEW YORK CENTRAL', 9, 1.1, '#cbbd9e', '#3a2e1e', '700 90px Georgia, serif') }), X, 12.4, Z + 55.95, 0, 0));
+    const tl = new THREE.PointLight(0xffd8a0, 0, 12, 2); tl.position.set(X, 5, Z + 57.5); g.add(tl); W.liTunL = tl;
+  }
+  // ---- carritos, coches aparcados y la gente del barrio
+  {
+    const cart = new THREE.Group(); cart.position.set(X + 5.6, .15, Z - 46); cart.rotation.y = Math.PI / 2; g.add(cart);
+    box(2, .5, 1, M(0x5a3a1e, { roughness: .8 }), 0, .8, 0, cart); [-1, 1].forEach(s => { const w = cyl(.35, .35, .06, M(0x2a1e14), -.4, .38, s * .55, cart, 12); w.rotation.x = Math.PI / 2; });
+    box(.06, 1.3, .06, M(0x5a3a1e), -.95, 1.6, .45, cart); box(.06, 1.3, .06, M(0x5a3a1e), .95, 1.6, .45, cart); box(2.2, .05, 1.2, M(0xffffff, { map: awnTex[1], side: THREE.DoubleSide }), 0, 2.25, 0, cart);
+    cart.traverse(o => { o.raycast = _noRay; }); col(X + 4.9, Z - 47.2, X + 6.3, Z - 44.8);
+    const fr = []; for (let i = 0; i < 30; i++) fr.push([X + 5.1 + Math.random() * .9, 1.12 + Math.random() * .1, Z - 46.9 + Math.random() * 1.8]);
+    const fi = new THREE.InstancedMesh(new THREE.SphereGeometry(.07, 6, 4), new THREE.MeshStandardMaterial({ roughness: .6 }), fr.length), d = new THREE.Object3D(), cl = new THREE.Color();
+    fr.forEach(([x, y, z], i) => { d.position.set(x, y, z); d.updateMatrix(); fi.setMatrixAt(i, d.matrix); fi.setColorAt(i, cl.setHex([0xc8281e, 0xe8a020, 0x6a9a2a, 0xe8d040][i % 4])); }); fi.raycast = _noRay; g.add(fi);
+    [[X - 2.8, Z + 30, 0x1e2a3a], [X + 2.8, Z - 30, 0x5a1e1a], [X - 2.8, Z - 66, 0x2a2a2a]].forEach(([x, z, c]) => { const car = makeCar(c); car.position.set(x, 0, z); car.rotation.y = Math.PI / 2; car.traverse(m => { m.raycast = _noRay; }); g.add(car); col(x - 1.05, z - 2.4, x + 1.05, z + 2.4); });
+  }
+  const person = (look, x, z, ry, name, label, lines, o) => {
+    const p = makePerson(Object.assign({ vary: false }, look)); p.group.position.set(x, .15, z); p.group.rotation.y = ry; g.add(p.group); p.gaze = true; W.speakers[name] = p; col(x - .3, z - .3, x + .3, z + .3);
+    let i = 0; if (lines) inter(p.hitBox || p.group, { label, use: async () => { const Ls = lines[i++ % lines.length]; for (const [who, t] of Ls) await say(who, t); endDialog(); } });
+    return p;
+  };
+  W.liSal = person({ coat: 0x7a6a4a, sleeve: 0xd8d2c4, shirt: 0xd8d2c4, hat: 'flat', hatColor: 0x3a3428, skin: 0xc8a088, face: 'round' }, X + 5.2, Z - 48.6, -Math.PI / 2, 'Sal, el frutero', 'Hablar con Sal, el frutero', [
+    [['Sal, el frutero', '¡Melocotones de Jersey, detective! Dulces como un domingo. Tres por cinco centavos, y le regalo la sonrisa.']],
+    [['Sal, el frutero', 'En este barrio todo el mundo es primo de alguien. Si pregunta por uno, se enteran cuarenta antes de que acabe la frase.']]]);
+  W.liBarber = person({ coat: 0xe8e2d4, sleeve: 0xe8e2d4, shirt: 0xe8e2d4, tie: 0x1a1a1a, hat: null, skin: 0xd8b09a, face: 'lean', hair: 0x1a1410 }, X + 5.4, Z + 41, -Math.PI / 2, 'Gennaro, el barbero', 'Hablar con Gennaro, el barbero', [
+    [['Gennaro, el barbero', '¿Un afeitado, detective? Navaja de Solingen y toalla caliente. Sale de aquí con diez años menos y dos secretos más.']],
+    [['Gennaro, el barbero', 'En mi silla se ha sentado medio Ayuntamiento. Todos hablan. Ninguno se da cuenta de que el barbero escucha.']]]);
+  W.liPriest = person({ coat: 0x111114, longCoat: true, hat: null, skin: 0xe0bca4, face: 'heavy', hair: 0xb8b4ac, tie: 0x111114, shirt: 0x111114 }, X - 2.4, Z - 111.6, 0, 'Padre Tommaso', 'Hablar con el padre Tommaso', [
+    [['Padre Tommaso', 'Bienvenido a San Gennaro, hijo. Aquí no preguntamos a qué se dedica la gente. Bastante tiene Dios con saberlo.']],
+    [['Padre Tommaso', 'En septiembre sacamos al santo en procesión por Mulberry. Le cuelgan billetes del manto. Algunos, de gente que no se atrevería a entrar en la iglesia.']]]);
+  person({ coat: 0x3a3a2e, hat: 'flat', hatColor: 0x2a2620, skin: 0xc8a088, face: 'heavy', seated: false }, X + 9.5, Z - 98, -Math.PI / 2 - .4, 'Acordeonista', 'Escuchar al acordeonista', [
+    [['Acordeonista', '«Torna a Surriento»... ¿La conoce? Mi madre la cantaba tendiendo la ropa. Una moneda y se la toco entera.']]]);
+  // Mamma Rosa, delante de su trattoria (y su encargo)
+  const rosa = makePerson({ coat: 0x2a2a2e, hairStyle: 'bob', hair: 0x9a948c, wcoat: 0x3a2a2e, skin: 0xe0bca4, face: 'round', vary: false });
+  rosa.group.position.set(X + 5.6, .15, Z + 13); rosa.group.rotation.y = -Math.PI / 2; g.add(rosa.group); rosa.gaze = true; col(X + 5.3, Z + 12.7, X + 5.9, Z + 13.3);
+  W.speakers['Mamma Rosa'] = rosa; W.liRosa = rosa;
+  inter(rosa.hitBox || rosa.group, { label: 'Hablar con Mamma Rosa', use: async () => { if (typeof liRosaTalk === 'function' && await liRosaTalk()) return;
+    await say('Mamma Rosa', '¡Mangia, detective, que está en los huesos! La salsa lleva cuatro horas al fuego. Como Dios manda.'); endDialog(); } });
+  // las puertas
+  barDoor(F.w, L.w(Z + 22), 1.4, { label: 'Entrar en el Caffè Napoli', use: async () => { await narr('Por la puerta del Caffè Napoli sale olor a café recién molido y el ruido de una partida de cartas.'); endDialog(); } });
+  barDoor(F.e, L.e(Z + 10), 1.4, { label: 'Entrar en la Trattoria Mamma Rosa', use: async () => { await narr(W.hour > 12 && W.hour < 23 ? 'Todas las mesas están ocupadas. Un camarero con delantal te hace un gesto: «¡Mezz\'ora, signore! ¡Media hora!».' : 'Cerrado. Por el cristal se ven las sillas encima de las mesas y una foto de un señor con bigote presidiendo la sala.'); endDialog(); } });
+  barDoor(F.e, L.e(Z + 26), 1.4, { label: 'Mirar el escaparate de la Pasticceria Santa Lucia', use: async () => { await narr('Cannoli, sfogliatelle, babà borrachos de ron... El escaparate de Santa Lucia debería estar prohibido por la ley. Franklin se lo apunta para otro día.'); endDialog(); } });
+  barDoor(F.w, L.w(Z - 56), 1.4, { label: 'Llamar al Circolo Sociale', use: async () => { await narr('Una mirilla se abre, unos ojos te miran de arriba abajo y la mirilla se cierra. Nadie dice nada. Nadie tiene que decirlo.'); endDialog(); } });
+  // vallas al final de Grand Street (calle cortada)
+  { const saw = M(0xe8e2d0, { roughness: .7 }), sawR = M(0xb02a1e, { roughness: .7 });
+    [X - 49.5, X + 49.5].forEach(x => { for (let i = -2; i <= 2; i++) { const s = new THREE.Group(); s.position.set(x, 0, Z - 10 + i * 2.6); s.rotation.y = Math.PI / 2; g.add(s); box(2.4, .22, .08, i % 2 ? saw : sawR, 0, .95, 0, s); [-1, 1].forEach(o => { const l = box(.08, 1.0, .08, M(0x3a3028), o * 1, .5, 0, s); l.rotation.z = o * .12; }); s.traverse(o => { o.raycast = _noRay; }); } }); }
+  W.liTick = liTick;
+}
+function barLittleItalyPeds(g, q) {
+  const X = LI.X, Z = LI.Z;
+  const looks = [{ coat: 0x2a2a30, hat: 'fedora', hatColor: 0x1a1a1e }, { coat: 0x5a2a2a, hairStyle: 'bob', hair: 0x2a1a10, wcoat: 0x4a2a2a }, { coat: 0x4a4038, hat: 'flat', hatColor: 0x2a2620 }, { coat: 0x2e3a2e, hairStyle: 'bob', hair: 0x1a1410, wcoat: 0x2e3a4a, whHat: 'cloche', hatColor: 0x1a1a22 }, { coat: 0x3a3e46, longCoat: true, hat: 'fedora', hatColor: 0x2a2622 }];
+  const routes = [[X - 5.6, X + 5.6, Z - 86, Z + 52], [X - 5.6, X + 5.6, Z - 86, Z + 52], [X - 5.6, X + 5.6, Z - 86, Z + 52], [X - 48, X - 8.6, Z - 15.6, Z - 4.4], [X + 8.6, X + 48, Z - 15.6, Z - 4.4]];
+  for (let i = 0; i < [3, 4, 5][q]; i++) {
+    const p = makePerson(Object.assign({ skin: [0xc8a088, 0xd8b09a, 0xb88a6a, 0xe0bca4][i % 4] }, looks[i % looks.length])); g.add(p.group); p.gaze = false;
+    const R = routes[i % routes.length], per = 2 * (R[1] - R[0] + R[3] - R[2]), colR = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(colR);
+    W.peds.push({ p, R, per, s: per * i / 5 + Math.random() * 10, dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .3, ph: Math.random() * 6, col: colR });
+  }
+}
+// el túnel: cruzarlo (andando o en coche) lleva de Park Avenue a Little Italy y al revés
+function liTick(dt, t) {
+  if (W.liFount) W.liFount.update(dt);
+  if (W.liTunL) W.liTunL.intensity = (W.lampK || 0) > .3 ? 2.5 : .8;
+  if (W._tun || W.mode !== 'walk' || locked() || CINE.on || S.paused) return;
+  const drv = !!W.drive;
+  if (P.z > PARK.Z1 - 3.2 && Math.abs(P.x - PARK.X) < 9.8 && P.x < 300) liTunnel(true);
+  else if (liIn(P.x, P.z) && P.z > LI.Z + 52.5 && Math.abs(P.x - LI.X) < 4.4) liTunnel(false);
+}
+async function liTunnel(toLI) {
+  W._tun = true; S.lock++;
+  try {
+    const d = W.drive, k = W.pcar;
+    if (d) d.v = Math.min(d.v, 8);
+    await fadeOut();
+    sfx('step'); if (A.ctx) { const c = A.ctx.currentTime; tone(70, c, 1.6, 'sawtooth', .02); }
+    const x = toLI ? LI.X + 2 : PARK.X + 6.25, z = toLI ? LI.Z + 42 : PARK.Z1 - 12;
+    if (d && k) { k.position.set(x, 0, z); k.rotation.y = Math.PI / 2; d.ch = Math.PI / 2; P.x = x; P.z = z; if (typeof carSave === 'function') carSave(); }
+    else { P.x = toLI ? LI.X + 1.5 : PARK.X + PARK.HW + 1.6; P.z = z; P.yaw = 0; P.pitch = -.03; }
+    MINI.base = null;
+    await wait(700);
+    fadeIn();
+    toast(toLI ? 'Little Italy' : 'Park Avenue', toLI ? 'Mulberry Street · al otro lado del túnel' : 'De vuelta en Midtown');
+    if (toLI && !W._liSeen) { W._liSeen = true; caps([[1200, 'Little Italy olía a ajo, a café y a pan recién hecho. Las bombillas de la fiesta de San Gennaro seguían colgadas de lado a lado de Mulberry Street.', 5600]]).catch(() => {}); }
+  } finally { S.lock--; setTimeout(() => { W._tun = false; }, 600); }
+}
+// plano: la hoja de Little Italy
+function liMap(c, mx, mz, sc) {
+  const X = LI.X, Z = LI.Z;
+  c.fillStyle = '#c4b590'; c.fillRect(mx(X - 70), mz(Z - 140), 140 * sc, 230 * sc);
+  c.fillStyle = '#f2e9d2';
+  c.fillRect(mx(X - 7), mz(Z - 88), 14 * sc, 144 * sc); c.fillRect(mx(X - 50), mz(Z - 17), 100 * sc, 14 * sc); c.fillRect(mx(X - 14), mz(Z - 114), 28 * sc, 26 * sc);
+  c.fillStyle = '#b8b0a0'; c.beginPath(); c.arc(mx(X), mz(Z - 100), 4.6 * sc, 0, 7); c.fill();
+  c.fillStyle = '#d8ccb0'; c.fillRect(mx(X - 11), mz(Z - 124), 22 * sc, 10 * sc);
+  c.fillStyle = '#b8a888'; c.fillRect(mx(X - 15), mz(Z + 56), 30 * sc, 12 * sc);
+  c.strokeStyle = 'rgba(160,40,30,.55)'; c.setLineDash([3, 4]); c.lineWidth = 2; [Z + 44, Z + 30, Z + 16, Z - 26, Z - 44, Z - 62, Z - 78].forEach(z => { c.beginPath(); c.moveTo(mx(X - 6.4), mz(z)); c.lineTo(mx(X + 6.4), mz(z)); c.stroke(); }); c.setLineDash([]);
+  c.fillStyle = '#8a1e14'; [X - 49.5, X + 49.5].forEach(x => c.fillRect(mx(x) - 2, mz(Z - 16), 4, 12 * sc));
+  c.fillStyle = '#5a5244'; c.font = '13px "Special Elite",monospace'; c.textAlign = 'center';
+  c.save(); c.translate(mx(X) + 4, mz(Z + 30)); c.rotate(-Math.PI / 2); c.fillText('MULBERRY STREET', 0, 0); c.restore();
+  c.fillText('GRAND STREET', mx(X - 30), mz(Z - 10) + 4);
+}
+function liPins(pin) {
+  const X = LI.X, Z = LI.Z;
+  pin(X - 7.5, Z + 22, 'Caffè Napoli', '#5a3a2a', '☕');
+  pin(X + 7.5, Z + 10, 'Trattoria Mamma Rosa', '#7a2a1a', '♨');
+  pin(X, Z - 116, 'Iglesia de San Gennaro', '#5a4a6a', '✝');
+  pin(X, Z + 58, 'Túnel a Park Avenue', '#3a3a3a', '⇡');
+  pin(PARK.X, PARK.Z1 + 1, 'Túnel a Little Italy', '#3a3a3a', '⇣');
+  if (G.free) { const D = libData(); if (!D.done.cannoli) pin(X + 6.4, Z + 13, 'Encargo: Mamma Rosa', '#b08a3a', '!'); }
+}
+
+/* ---------- encargo: los cannoli de Mamma Rosa (tres cajas antes de que se ablanden) ---------- */
+async function liRosaTalk() {
+  if (!G.free) return false;
+  const D = libData();
+  if (D.done.cannoli) { await say('Mamma Rosa', '¡El padre Tommaso dice que eran los mejores cannoli de su vida! Y el barbero ya me ha pedido otra docena. Usted, siempre que quiera, a comer gratis.'); endDialog(); return true; }
+  if (LIB.act && LIB.act.id === 'cannoli') { const i = await choose(['Sigo repartiendo', 'Lo dejo (abandonar el encargo)'], 'Los cannoli de Mamma Rosa'); if (i === 1) libFail('Mamma Rosa suspira: «Ya los llevará mi sobrino... cuando se despierte».'); endDialog(); return true; }
+  if (LIB.act || D.q) { await say('Mamma Rosa', 'Le veo muy liado, detective. Vuelva luego, que siempre hay algo en el fuego.'); endDialog(); return true; }
+  await say('Mamma Rosa', 'Detective, ¡un favor! Mi sobrino tenía que llevar tres cajas de cannoli y se ha ido a ver a la novia. A la novia, ¡en martes!');
+  await say('Mamma Rosa', 'Una para el padre Tommaso, en la iglesia. Otra para Gennaro, el barbero. Y otra para Sal, el del carrito de fruta. ¡Rápido, que la crema no espera!');
+  const i = await choose(['Los llevo<small>Encargo · reparte tres cajas de cannoli antes de que se ablanden</small>', 'Ahora no, Mamma Rosa'], 'Los cannoli de Mamma Rosa');
+  if (i === 0) { await say('Franklin', 'Tres cajas, tres paradas. He hecho entregas más difíciles.'); endDialog(); liStartCannoli(); } else endDialog();
+  return true;
+}
+function liStartCannoli() {
+  const who = [['El padre Tommaso', W.liPriest], ['Gennaro, el barbero', W.liBarber], ['Sal, el frutero', W.liSal]].filter(x => x[1]);
+  let left = who.slice();
+  const thanks = { 'El padre Tommaso': 'El padre Tommaso abre la caja, cierra los ojos y bendice los cannoli. Por si acaso.', 'Gennaro, el barbero': 'Gennaro se come uno de pie, con la navaja todavía en la mano. «Dígale a Rosa que la quiero. Bueno, que la aprecio».', 'Sal, el frutero': 'Sal te da a cambio un melocotón. «Trato justo», dice, con la boca llena de crema.' };
+  libBegin({ id: 'cannoli', time: 140, late: 'Cuando llegas, la crema de los cannoli ya se ha derretido. Mamma Rosa no te lo va a perdonar en una semana.', tick: () => {
+    left.sort((a, b) => Math.hypot(a[1].group.position.x - P.x, a[1].group.position.z - P.z) - Math.hypot(b[1].group.position.x - P.x, b[1].group.position.z - P.z));
+    const [lb, p] = left[0], q = p.group.position; libObj(`${lb} (${who.length - left.length + 1}/${who.length})`, q.x, q.z);
+    if (Math.hypot(q.x - P.x, q.z - P.z) < 3 && !W.drive) {
+      left.shift(); sfx('paper'); toast('Los cannoli de Mamma Rosa', `Caja entregada · ${who.length - left.length} de ${who.length}`);
+      const msg = thanks[lb];
+      if (!left.length) { libWin('cannoli'); setTimeout(async () => { if (locked()) return; S.lock++; try { await narr(msg); await narr('Las tres cajas, entregadas, y la crema todavía fría. Mamma Rosa lo contará en todo Mulberry Street antes de la cena.'); endDialog(); } finally { S.lock--; } }, 300); }
+      else setTimeout(async () => { if (locked()) return; S.lock++; try { await narr(msg); endDialog(); } finally { S.lock--; } }, 300);
+    }
+  } });
+}
+
+/* ---------- el Caffè Napoli (interior) ---------- */
+function locCaffe(g) {
+  const W2 = 9, D = 11, H = 3.3;
+  room({ x1: -W2 / 2, x2: W2 / 2, z1: -D / 2, z2: D / 2, h: H, wall: M(0xffffff, { map: wallpaper('#d8c8a0', '#cfbe94', [4, 1.3]) }), floor: M(0xffffff, { map: tiles('#e8e2d4', '#2a2622', 8, [6, 7]), roughness: .4 }), ceil: M(0xe8e0cc), trim: M(0x3a2414),
+    wainscot: { h: 1.0, mat: M(0x4a2a14, { roughness: .5 }) }, gaps: { s: [{ from: -.6, to: .6, bottom: 0, top: 2.3 }] } });
+  const wood = M(0x4a2a14, { roughness: .4 }), marble = M(0xe8e4dc, { roughness: .2, metalness: .1 }), chrome = M(0xd8dcdf, { metalness: .95, roughness: .18 });
+  solid(6, 1.05, .8, wood, -.6, .52, -4.2); box(6.2, .06, 1.0, marble, -.6, 1.08, -4.2);
+  // la cafetera de palanca, con su águila
+  const em = new THREE.Group(); em.position.set(-2.2, 1.1, -4.4); g.add(em);
+  cyl(.28, .3, .7, chrome, 0, .35, 0, em, 18); sphere(.2, chrome, 0, .82, 0, em, 14, 10); const eagle = new THREE.Mesh(new THREE.ConeGeometry(.08, .2, 6), M(0xc09a4c, { metalness: .9, roughness: .3 })); eagle.position.y = 1.06; em.add(eagle);
+  [-.18, .18].forEach(x => { const l = cyl(.025, .025, .45, M(0x1a1a1a), x, .5, .3, em, 6); l.rotation.x = -.7; });
+  // vitrina de pasteles
+  box(1.8, .5, .6, new THREE.MeshStandardMaterial({ color: 0xcfe2e8, transparent: true, opacity: .35, roughness: .05 }), 1.2, 1.36, -4.1);
+  for (let i = 0; i < 10; i++) { const c = cyl(.05, .05, .2, M(i % 2 ? 0xe8d8a8 : 0xd8b070, { roughness: .7 }), .5 + (i % 5) * .3, 1.2, -4.25 + Math.floor(i / 5) * .25, null, 8); c.rotation.z = Math.PI / 2; }
+  box(5.6, 2.2, .3, M(0x2a1608), -.6, 2.1, -5.35); [1.5, 2.1].forEach(y => box(5.2, .04, .3, wood, -.6, y, -5.2));
+  const bc = [0x6a3a14, 0x2a5a2a, 0xa86a2a, 0x8a1a1a];
+  for (let i = 0; i < 20; i++) cyl(.045, .05, .3, new THREE.MeshStandardMaterial({ color: bc[i % 4], roughness: .1, emissive: bc[i % 4], emissiveIntensity: .2 }), -3 + (i % 10) * .5, [1.66, 2.26][Math.floor(i / 10)], -5.2, null, 8);
+  const sg = textTex(512, 96, '#1e3a2a', (c, w, h) => { c.fillStyle = '#e8c87a'; c.font = '700 54px Georgia'; c.textAlign = 'center'; c.fillText('CAFFÈ NAPOLI', w / 2, 66); });
+  plane(2.6, .5, M(0xffffff, { map: sg, emissive: 0x222222, emissiveMap: sg }), -.6, 2.95, -5.18);
+  // mesas con mantel de cuadros
+  const check = M(0xffffff, { map: ctex(64, 64, (c, w, h) => { for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 8) { c.fillStyle = ((x + y) / 8) % 2 ? '#e8e2d4' : '#b02a22'; c.fillRect(x, y, 8, 8); } }), roughness: .8 });
+  [[-2.4, .6], [1.6, -.4], [2.2, 3.2], [-2.2, 3.4]].forEach(([x, z]) => { box(1.1, .04, 1.1, check, x, .76, z); cyl(.05, .08, .74, M(0x1a1a1a), x, .37, z, null, 8); col(x - .55, z - .55, x + .55, z + .55); locLight(x, 1.9, z, 0xffd090, 1.4, 3.4); });
+  g.add(new THREE.HemisphereLight(0xfff0d8, 0x4a3a28, 1.6)); locLight(-.6, 2.9, -3.6, 0xffd8a0, 6, 7); locLight(0, 2.9, 2, 0xffe0b0, 6, 9);
+  // Enzo, el camarero, y los viejos de la partida de scopa
+  locNPC({ coat: 0xe8e2d4, sleeve: 0xe8e2d4, shirt: 0xe8e2d4, tie: 0x1a1a1a, hat: null, skin: 0xd8b09a, face: 'lean', hair: 0x2a1a10 }, -.6, -4.85, 0, 'Enzo', { label: 'Hablar con Enzo, el camarero', use: async () => {
+    const r = ['Aquí el café se toma de pie, en la barra y en tres sorbos. Sentado es para los turistas y para los que esperan a alguien.', 'Si oye discutir en la mesa del fondo, no se preocupe: llevan cuarenta años jugando a la scopa y todavía no han acabado la primera partida.', 'El túnel de Park Avenue nos trae a los de Midtown con sus sombreros nuevos. Se toman un espresso, ponen cara de sufrir y vuelven a por otro.'];
+    await say('Enzo', r[(W._er = ((W._er || 0) + 1)) % r.length]); endDialog(); } });
+  [[1.0, -.4, Math.PI / 2, 'Nonno Salvatore', 0x5a5044], [2.2, -.4, -Math.PI / 2, 'Nonno Pino', 0x3a3a2e]].forEach(([x, z, ry, n, c]) => {
+    const p = makePerson({ coat: c, hat: 'flat', hatColor: 0x2a2620, skin: 0xd8b09a, face: 'heavy', seated: true, vary: false }); p.group.position.set(x, -.27, z); p.group.rotation.y = ry; g.add(p.group); p.gaze = true; W.speakers[n] = p; col(x - .3, z - .3, x + .3, z + .3);
+    p.hand = [V3(-.12, 1.0, .35), V3(.12, 1.0, .35)]; p.updateArms && p.updateArms();
+  });
+  const cards = new THREE.Mesh(new THREE.BoxGeometry(1.1, .3, 1.1), new THREE.MeshBasicMaterial({ visible: false })); cards.position.set(1.6, .9, -.4); g.add(cards);
+  inter(cards, { label: 'Jugar a la scopa con los abuelos', use: liScopa });
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(6, 1.2, 1.1), new THREE.MeshBasicMaterial({ visible: false })); bar.position.set(-.6, .6, -3.9); g.add(bar);
+  inter(bar, { label: 'Pedir algo en la barra', use: async () => {
+    const i = await choose(['Un espresso', 'Un cannolo y un capuchino', 'Una grappa, para el frío'], 'Caffè Napoli');
+    await narr(['Enzo tira el espresso con un golpe de palanca que suena a locomotora. Tres sorbos y Franklin ve los colores un poco más nítidos.', 'El cannolo cruje, la crema es fría y el capuchino tiene la espuma justa. Por un momento, el caso puede esperar.', 'La grappa quema como un mal recuerdo. Enzo sonríe: «Para el frío... y para lo que venga después».'][i]); endDialog(); } });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, .3), new THREE.MeshBasicMaterial({ visible: false })); door.position.set(0, 1.2, D / 2 - .1); g.add(door); inter(door, locExit('caffe'));
+  box(1.2, 2.25, .06, M(0x3a2414), 0, 1.15, D / 2);
+  W.spawn = { x: 0, z: D / 2 - 1.2, yaw: 0, pitch: -.05 };
+}
+async function liScopa() {
+  const D = libData(); let me = 0, them = 0;
+  await say('Nonno Salvatore', '¿Sabe jugar a la scopa, detective? Da igual. Siéntese: con nosotros se aprende perdiendo.');
+  for (let r = 0; r < 3; r++) {
+    const i = await choose(['Llevarme los oros<small>Arriesgado, pero vale más</small>', 'Ir a por el siete de oros', 'Hacer escoba (llevarme toda la mesa)'], `La scopa · mano ${r + 1} · ${me} – ${them}`);
+    const x = Math.random(), win = i === 0 ? x < .45 : i === 1 ? x < .55 : x < .3, pts = i === 2 ? 2 : 1;
+    if (win) { me += pts; sfx('good'); await narr(['Los oros caen de tu lado. Nonno Pino se lleva las manos a la cabeza.', '¡El siete de oros, el «settebello»! Nonno Salvatore jura en napolitano.', '¡Scopa! Te llevas toda la mesa de un golpe. Hasta Enzo aplaude desde la barra.'][i]); }
+    else { them += 1; sfx('bad'); await narr(['Nonno Pino se lleva los oros sin mirarte siquiera.', 'El siete de oros lo tenía Salvatore desde la primera mano. Siempre lo tiene.', 'Intentas la escoba y te quedas con una carta suelta y cara de tonto.'][i]); }
+  }
+  if (me > them) { D.scopa = (D.scopa || 0) + 1; libSave(); await say('Nonno Salvatore', '¡Ma che fortuna! Un poli que juega a la scopa... Pino, ¿has visto? El mundo se acaba.'); try { unlock('scopa'); } catch (e) {} }
+  else await say('Nonno Pino', 'Bien, bien. Para ser de Midtown, no lo ha hecho mal. Vuelva el jueves: los jueves perdemos más.');
+  endDialog();
+}
+
+/* =========================================================
    PASEO LIBRE · encargos por el barrio, piezas del rompecabezas
    y el piso de Franklin en el Belmont (como un piso franco)
    ========================================================= */
@@ -4091,7 +4432,8 @@ const MISIONES = [
   { id: 'partitura', title: 'La partitura perdida', giver: 'Xavi, el contrabajista del Jazz Lantern', clip: ['EL JAZZ LANTERN', 'ESTRENA UN TEMA'] },
   { id: 'bobina', title: 'La tercera bobina', giver: 'El acomodador del cine Rialto', clip: ['EL RIALTO', 'PROYECTA EL FINAL'] },
   { id: 'apuesta', title: 'Cinco dólares', giver: 'El portero del 1040 de Madison', clip: ['LOS PORTEROS', 'HACEN LAS PACES'] },
-  { id: 'carga', title: 'La carga del Carolina', giver: 'El capitán del puerto', clip: ['ADUANAS INCAUTA', 'WHISKY EN EL MUELLE'] }
+  { id: 'carga', title: 'La carga del Carolina', giver: 'El capitán del puerto', clip: ['ADUANAS INCAUTA', 'WHISKY EN EL MUELLE'] },
+  { id: 'cannoli', title: 'Los cannoli de Mamma Rosa', giver: 'Mamma Rosa, en Little Italy', clip: ['MULBERRY STREET', 'SE CHUPA LOS DEDOS'] }
 ];
 // las doce piezas del rompecabezas escondidas por Midtown [x, z, altura del suelo]
 const LIB_PIECES = [[-13.5, -6.7, 0], [-6.7, 12.4, 0], [22.5, 23.7, 0], [-19, -6.8, 0], [-18.35, 18.4, 0], [-9.6, 22.4, 0],
@@ -4468,14 +4810,14 @@ function pisoBoard(cv) {
   for (let i = 0; i < 2600; i++) { c.fillStyle = `rgba(${60 + Math.random() * 60},${40 + Math.random() * 40},20,${Math.random() * .35})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
   c.fillStyle = '#2a1e12'; c.font = '700 30px Georgia'; c.textAlign = 'center'; c.fillText('CASOS DE MIDTOWN', w / 2, 40);
   MISIONES.forEach((m, i) => {
-    const x = 16 + (i % 3) * 204, y = 52 + Math.floor(i / 3) * 124, ok = D.done[m.id];
-    c.save(); c.translate(x + 100, y + 58); c.rotate((i % 2 ? 1 : -1) * .03); c.scale(.68, .8);
+    const x = 16 + (i % 4) * 154, y = 52 + Math.floor(i / 4) * 124, ok = D.done[m.id];
+    c.save(); c.translate(x + 76, y + 58); c.rotate((i % 2 ? 1 : -1) * .03); c.scale(.52, .8);
     c.fillStyle = ok ? '#e6dcc4' : '#efe4c8'; c.fillRect(-140, -58, 280, 124);
     c.fillStyle = '#1e1a14'; c.textAlign = 'center';
     if (ok) { c.font = '800 24px Georgia'; c.fillText(m.clip[0], 0, -24); c.fillText(m.clip[1], 0, 4); c.fillStyle = 'rgba(30,26,20,.45)'; for (let k = 0; k < 4; k++) c.fillRect(-120, 20 + k * 9, 240 - k * 30, 4); c.fillStyle = '#8a1e14'; c.font = '700 18px Georgia'; c.rotate(-.15); c.strokeStyle = '#8a1e14'; c.lineWidth = 3; c.strokeRect(30, 22, 100, 30); c.fillText('CERRADO', 80, 43); }
     else { c.font = 'italic 22px Georgia'; c.fillText(m.title, 0, -18); c.font = 'italic 16px Georgia'; c.fillStyle = '#5a5244'; c.fillText(m.giver, 0, 12); c.font = '700 34px Georgia'; c.fillStyle = '#8a6a3a'; c.fillText('?', 0, 52); }
     c.restore();
-    c.fillStyle = '#a8261c'; c.beginPath(); c.arc(x + 100, y + 14, 6, 0, 7); c.fill();
+    c.fillStyle = '#a8261c'; c.beginPath(); c.arc(x + 76, y + 14, 6, 0, 7); c.fill();
   });
   c.fillStyle = '#1e1a14'; c.font = 'italic 20px Georgia'; c.textAlign = 'right'; c.fillText(`Piezas del rompecabezas: ${D.pieces.length} / ${LIB_PIECES.length}`, w - 24, h - 16);
 }
@@ -4582,7 +4924,7 @@ const LIBQ = {
   apuesta: { meridian: 'Habla con el portero de The Meridian, en Park Avenue', m1040: 'Vuelve al portero del 1040 de Madison' }
 };
 const LIB_WHERE = { reparto: 'Habla con Jimmy, el de los periódicos, junto al quiosco de la Calle 45', llamada: 'Pasa cerca de la cabina de la Sexta Avenida: tarde o temprano sonará', gato: 'Habla con la señora Kowalski, en el portal del Belmont', sombra: 'Habla con el agente de ronda, en la Calle 45',
-  cuenta: "Habla con Doris, dentro del Sam's Diner", partitura: 'Habla con Xavi, dentro del Jazz Lantern', bobina: 'Habla con el acomodador, dentro del cine Rialto', apuesta: 'Habla con el portero del 1040 de Madison Avenue', carga: 'Habla con el capitán del puerto, delante de la Capitanía, en los muelles del Hudson' };
+  cuenta: "Habla con Doris, dentro del Sam's Diner", partitura: 'Habla con Xavi, dentro del Jazz Lantern', bobina: 'Habla con el acomodador, dentro del cine Rialto', apuesta: 'Habla con el portero del 1040 de Madison Avenue', carga: 'Habla con el capitán del puerto, delante de la Capitanía, en los muelles del Hudson', cannoli: 'Habla con Mamma Rosa, delante de su trattoria en Little Italy (por el túnel del final de Park Avenue)' };
 function libQStart(id, step) { const D = libData(); D.q = { id, step }; libSave(); MINI.base = null; toast('Nuevo encargo', libMis(id).title + ' · ' + LIBQ[id][step]); }
 function libQStep(step) { const D = libData(); if (!D.q) return; D.q.step = step; libSave(); toast(libMis(D.q.id).title, LIBQ[D.q.id][step]); }
 function libQWin(id) { const D = libData(); D.q = null; libSave(); libWin(id); }
@@ -4606,7 +4948,7 @@ function libQObj() {
 function libreBarrio2(g, F) {
   const D = libData();
   const go = (kind) => async () => { if (LIB.act) { await say('Franklin', 'Primero termino lo que tengo entre manos.'); endDialog(); return; } G.freeHour = W.hour; S.lock++; setTimeout(async () => { try { await loadScene('l_' + kind); } catch (e) { console.error(e); } finally { S.lock--; } }, 30); };
-  [["Entrar en Sam's Diner", 'diner'], ["Entrar en O'Malley's", 'pub'], ['Entrar en The Jazz Lantern', 'jazz'], ['Mirar la cartelera del Rialto', 'cine'], ['Entrar en El Ancla', 'ancla']].forEach(([lb, kind]) => {
+  [["Entrar en Sam's Diner", 'diner'], ["Entrar en O'Malley's", 'pub'], ['Entrar en The Jazz Lantern', 'jazz'], ['Mirar la cartelera del Rialto', 'cine'], ['Entrar en El Ancla', 'ancla'], ['Entrar en el Caffè Napoli', 'caffe']].forEach(([lb, kind]) => {
     const d = W.inters.find(i => i.label === lb); if (!d) return; d.label = LOCALES[kind].door; d.use = go(kind);
   });
   // al salir de un local, apareces en su puerta, mirando a la calle
@@ -4723,7 +5065,8 @@ const LOCALES = {
   pub: { name: "O'Malley's", sub: 'Séptima Avenida', door: "Entrar en O'Malley's", mood: 'street' },
   jazz: { name: 'The Jazz Lantern', sub: 'Calle 45', door: 'Entrar en The Jazz Lantern', mood: 'combo' },
   cine: { name: 'Cine Rialto', sub: 'Quinta Avenida', door: 'Entrar en el cine Rialto', mood: 'night' },
-  ancla: { name: 'El Ancla', sub: 'Los muelles del Hudson', door: 'Entrar en El Ancla', mood: 'street' }
+  ancla: { name: 'El Ancla', sub: 'Los muelles del Hudson', door: 'Entrar en El Ancla', mood: 'street' },
+  caffe: { name: 'Caffè Napoli', sub: 'Mulberry Street · Little Italy', door: 'Entrar en el Caffè Napoli', mood: 'morning' }
 };
 function locExit(kind) {
   return { label: 'Salir a la calle', use: async () => { G.spawnAt = LOCALES[kind].door; G.freeHour = W.hour; S.lock++; setTimeout(async () => { try { await loadScene('barrio'); } catch (e) { console.error(e); } finally { S.lock--; } }, 30); } };
@@ -4747,7 +5090,7 @@ function buildLocal(kind) {
   const L = LOCALES[kind];
   newWorld({ mode: 'walk', bg: 0x0a0908, name: 'l_' + kind });
   const g = W.group; W.hour = G.freeHour != null ? G.freeHour : 21; W.local = kind;
-  ({ diner: locDiner, pub: locPub, jazz: locJazz, cine: locCine, ancla: locAncla })[kind](g);
+  ({ diner: locDiner, pub: locPub, jazz: locJazz, cine: locCine, ancla: locAncla, caffe: locCaffe })[kind](g);
   W.setup = () => { setLoc(L.name, `${L.sub} · ${todName(W.hour)}`); setHelp(isTouch ? 'Toca lo que te interese · la puerta para salir' : 'E o clic para interactuar · sal por la puerta para volver a la calle'); ambient('hum'); music(L.mood); };
   const u0 = W.update;
   W.update = (dt, t) => { if (u0) u0(dt, t); W.hour = (W.hour + dt / 40) % 24; G.freeHour = W.hour; if (G.coffeeT > 0) G.coffeeT -= dt; (W.anim || []).forEach(f => f(dt, t)); };
@@ -5803,7 +6146,7 @@ function crimeSay(txt) { crimeRadioSfx(); toast('Radio de la policía', txt); cl
 function crimeEligible() {
   if (!W || W.name !== 'barrio' || !G.free || !G.inGame) return false;
   if (typeof G.hub === 'number' && G.hub < 3) return false;          // al principio de la historia, aún no
-  return W.mode === 'walk' && !locked() && !CINE.on && !S.paused && !LIB.act;
+  return W.mode === 'walk' && !locked() && !CINE.on && !S.paused && !LIB.act && !liIn(P.x, P.z);
 }
 function crimeTick(dt) {
   if (!crimeEligible()) return;
@@ -8130,7 +8473,7 @@ async function loadScene(name) {
   S.lock++; saveScene(name);
   if (!fadeEl.classList.contains('on')) await fadeOut();
   $('#card').hidden = true;
-  ({ apt: buildApartment, morgue: () => buildMorgue(), taxi: buildTaxi, office: buildOffice, skyline: buildSkyline, morgue5: () => buildMorgue('sullivan'), taxi5: () => { buildTaxi(); W.onEnter = taxiScene5; }, flat: buildSullivanFlat, club6: () => buildClub('walk'), raid: () => buildClub('raid'), basement: buildBasement, portal: buildPortal, barrio: buildBarrio /*BAR-load*/, piso: buildPiso /*LIB-load*/, l_diner: () => buildLocal('diner'), l_pub: () => buildLocal('pub'), l_jazz: () => buildLocal('jazz'), l_cine: () => buildLocal('cine') /*LOC-load*/, l_ancla: () => buildLocal('ancla') /*MUE-load*/ })[name]();
+  ({ apt: buildApartment, morgue: () => buildMorgue(), taxi: buildTaxi, office: buildOffice, skyline: buildSkyline, morgue5: () => buildMorgue('sullivan'), taxi5: () => { buildTaxi(); W.onEnter = taxiScene5; }, flat: buildSullivanFlat, club6: () => buildClub('walk'), raid: () => buildClub('raid'), basement: buildBasement, portal: buildPortal, barrio: buildBarrio /*BAR-load*/, piso: buildPiso /*LIB-load*/, l_diner: () => buildLocal('diner'), l_pub: () => buildLocal('pub'), l_jazz: () => buildLocal('jazz'), l_cine: () => buildLocal('cine') /*LOC-load*/, l_ancla: () => buildLocal('ancla') /*MUE-load*/, l_caffe: () => buildLocal('caffe') /*LI-load*/ })[name]();
   S.scene = name; selfShadow(); /*ENV-self*/
   if (W.spawn) { P.x = W.spawn.x; P.z = W.spawn.z; P.yaw = W.spawn.yaw; P.pitch = W.spawn.pitch; }
   W.look = { yaw: 0, pitch: 0 };
@@ -10034,6 +10377,7 @@ const ACH = [
   { id: 'enigma', t: 'Baila entre las sombras', d: 'Resuelve el enigma final a la primera.' },
   { id: 'sabueso', t: 'Sabueso', d: 'Atrapa a Mancini tras la persecución por los callejones.' }, /*GUN-ach*/
   { id: 'pulso', t: 'Brazo de hierro', d: 'Gánale un pulso a Big Tony en El Ancla, en los muelles.' }, /*MUE-ach*/
+  { id: 'scopa', t: '¡Scopa!', d: 'Gana una partida de scopa a los abuelos del Caffè Napoli, en Little Italy.' }, /*LI-ach*/
   { id: 'losabia', t: 'Lo sabía', d: 'Sospecha del Rompecabezas antes de que se quite la máscara.', secret: true },
   { id: 'lector', t: 'Lector de La Crónica', d: 'Lee las cuatro primeras planas del caso.' },
   { id: 'noir', t: 'En blanco y negro', d: 'Juega un capítulo entero en modo noir.' },
