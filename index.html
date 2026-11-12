@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.2.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.2.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2081,7 +2081,7 @@ function buildBarrio() {
   W.speedMul = 1.3; W.cols0 = 0;
   // suelo: asfalto mojado bajo todo el barrio y aceras como losas con bordillo
   const asphalt = M(0xffffff, { map: ctex(256, 256, (c, w, h) => { c.fillStyle = '#25282d'; c.fillRect(0, 0, w, h); speckle(c, w, h, 3500, .4); }, [70, 70]), roughness: .28, metalness: .22 });
-  const ground = plane(331, 340, asphalt, 44.5, 0, 0, -Math.PI / 2); ground.raycast = _noRay;
+  const ground = plane(321.6, 340, asphalt, 49.2, 0, 0, -Math.PI / 2); ground.raycast = _noRay;
   const conc = M(0xffffff, { map: tiles('#5a5a58', '#525250', 4, [1, 1]), roughness: .5, metalness: .12 });
   const slab = (x0, x1, z0, z1) => { const m = conc.clone(); m.map = conc.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.castShadow = false; b.raycast = _noRay; };
   BAR.blocks.concat([BAR.park]).forEach(([x0, x1, z0, z1]) => slab(x0 - 3, x1 + 3, z0 - 3, z1 + 3));
@@ -2258,7 +2258,6 @@ function buildBarrio() {
   for (let i = 0; i < nPeds; i++) {
     const lk = Object.assign({ skin: [0xc8a088, 0xd8b09a, 0xb88a6a, 0xe0bca4, 0x9a6a4a][i % 5] }, looks[i % looks.length]);
     const p = makePerson(lk); g.add(p.group); p.gaze = false;
-    if (i % 2 === 0) { p.hand[1].set(.16, 1.32, .12); p.updateArms(); umbrella(p); p.umb = true; }
     const dir = i % 2 ? 1 : -1, off = dir > 0 ? .9 : 1.8, [x0, x1, z0, z1] = loops[i % loops.length];
     const R = [x0 - off, x1 + off, z0 - off, z1 + off], per = 2 * (R[1] - R[0] + R[3] - R[2]);
     const colR = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(colR);
@@ -2269,7 +2268,6 @@ function buildBarrio() {
     const elegant = [{ coat: 0x2a2a30, longCoat: true, hat: 'fedora', hatColor: 0x1a1a1e }, { coat: 0x6a2a3a, hairStyle: 'bob', hair: 0x3a2214, wcoat: 0x6a2a3a, whHat: 'cloche', hatColor: 0x2a1a1e }, { coat: 0x8a7a5a, longCoat: true, hat: 'fedora', hatColor: 0x4a3a2a }, { coat: 0x1e2a3a, hairStyle: 'bob', hairLong: 1, hair: 0xb08a51, wcoat: 0x1e2a3a, whHat: 'cloche', hatColor: 0x1a1a22 }];
     for (let i = 0; i < [2, 4, 6][q]; i++) {
       const p = makePerson(Object.assign({ skin: [0xd8b09a, 0xe0bca4, 0xc8a088][i % 3] }, elegant[i % elegant.length])); g.add(p.group); p.gaze = false;
-      if (i % 3 === 1) { p.hand[1].set(.16, 1.32, .12); p.updateArms(); umbrella(p); p.umb = true; }
       const R = pl[i % 2], per = 2 * (R[1] - R[0] + R[3] - R[2]), colR = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(colR);
       W.peds.push({ p, R, per, s: Math.random() * per, dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .3, ph: Math.random() * 6, col: colR });
     } }
@@ -2363,7 +2361,7 @@ function buildBarrio() {
     if (rainObj.visible) rainUpd(dt); rainObj.position.set(P.x, P.fy || 0, P.z);
     W.fount.update(dt); if (W.alleySteam) W.alleySteam.update(dt);
     (W.sheets || []).forEach(sh => { sh.rotation.x = Math.sin(t * 1.7 + sh.userData.sway) * .14; });
-    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.dockTick) W.dockTick(dt, t); barCullTick(dt);
+    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); barCullTick(dt);
     const zn = barZone(); if (zn !== W._zone && W.mode === 'walk') { W._zone = zn; setLoc(zn, G.free ? todName(W.hour) : (W.walkSub || 'De noche, bajo la lluvia')); }
   };
   { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
@@ -2767,7 +2765,7 @@ function barrioBackdrop() {
       const a = Math.random() * Math.PI * 2, r = r0 + Math.random() * (r1 - r0), cx = Math.cos(a) * r, cz = Math.sin(a) * r;
       if (ri === 0 && (Math.abs(cx) < 16 || Math.abs(cz) < 16)) continue;          // no tapar el final de las avenidas
       if (cx < -112 && Math.abs(Math.atan2(cz, -cx)) < .62) continue;
-      if (ri < 2 && cx > -240 && cx < -40 && cz < -30 && cz > -300) continue;          // los muelles del Hudson (y su niebla)                // sobre el río no hay torres: se ve la otra orilla
+      if (ri < 2 && cx > -240 && cx < -62 && cz < -30 && cz > -300) continue;          // los muelles del Hudson (y su niebla)                // sobre el río no hay torres: se ve la otra orilla
       if (cx > 55 && cx < 170 + ri * 20 && cz > -175 && cz < 175) continue;           // Madison, Park Avenue y sus manzanas
       const w = 14 + Math.random() * 26, d = 14 + Math.random() * 22;
       // cada torre en su solar: nada de edificios metidos unos dentro de otros
@@ -2794,15 +2792,15 @@ function barrioBackdrop() {
   for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y <= 0) cc.copy(haze); else if (y < 90) cc.copy(haze).lerp(glow, y / 90); else if (y < 260) cc.copy(glow).lerp(mid, (y - 90) / 170); else cc.copy(mid).lerp(top, Math.min(1, (y - 260) / 160)); col.push(cc.r, cc.g, cc.b); }
   sg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   const dome = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
-  dome.raycast = _noRay; dome.renderOrder = -10; dome.frustumCulled = false; sky.add(dome); W.domeGeo = sg;
+  dome.raycast = _noRay; dome.renderOrder = -10; dome.frustumCulled = false; const mov = new THREE.Group(); mov.name = 'cielo'; sky.add(mov); W.skyMove = mov; mov.add(dome); W.domeGeo = sg;
   // nubes y estrellas (textura procedural; el color cambia con la hora en barTime)
-  const cl = barClouds(); sky.add(cl.stars); sky.add(cl.mesh); W.cloudMat = cl.mesh.material; W.starMat = cl.stars.material;
+  const cl = barClouds(); mov.add(cl.stars); mov.add(cl.mesh); W.cloudMat = cl.mesh.material; W.starMat = cl.stars.material;
   // la luna, velada por las nubes
   const md = V3(-.55, .42, -.72).normalize().multiplyScalar(400);
-  const glowS = haloSprite(0xb8c4dc, 150, .22); glowS.material.fog = false; glowS.position.copy(md); glowS.renderOrder = -9; sky.add(glowS);
-  const moon = haloSprite(0xe8ecf4, 16, .75); moon.material.fog = false; moon.material.blending = THREE.NormalBlending; moon.position.copy(md); moon.renderOrder = -8; sky.add(moon);
-  const sunG = haloSprite(0xffe6c0, 170, .3); sunG.material.fog = false; sunG.renderOrder = -9; sky.add(sunG);
-  const sun = haloSprite(0xfff4dc, 26, .9); sun.material.fog = false; sun.renderOrder = -8; sky.add(sun);
+  const glowS = haloSprite(0xb8c4dc, 150, .22); glowS.material.fog = false; glowS.position.copy(md); glowS.renderOrder = -9; mov.add(glowS);
+  const moon = haloSprite(0xe8ecf4, 16, .75); moon.material.fog = false; moon.material.blending = THREE.NormalBlending; moon.position.copy(md); moon.renderOrder = -8; mov.add(moon);
+  const sunG = haloSprite(0xffe6c0, 170, .3); sunG.material.fog = false; sunG.renderOrder = -9; mov.add(sunG);
+  const sun = haloSprite(0xfff4dc, 26, .9); sun.material.fog = false; sun.renderOrder = -8; mov.add(sun);
   W.astro = { moonG: glowS, moon, sunG, sun };
   W.group.add(sky); W.skyline = sky;
   if (camera.far < 480) { camera.far = 480; camera.updateProjectionMatrix(); }
@@ -3673,7 +3671,7 @@ function barDocks(g, q) {
   const slab = (x0, x1, z0, z1, mat) => { const m = (mat || conc).clone(); m.map = m.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.raycast = _noRay; b.castShadow = false; return b; };
   const ZN = MUE.Z1 - 2, zMid = (-130 + ZN) / 2;
   // ---- la calle del muelle, hasta el final
-  plane(80, 50, M(0xffffff, { map: ctex(256, 256, (c, w, h) => { c.fillStyle = '#25282d'; c.fillRect(0, 0, w, h); speckle(c, w, h, 3500, .4); }, [12, 8]), roughness: .28, metalness: .22 }), -85, 0, -195, -Math.PI / 2).raycast = _noRay;
+  plane(66.4, 50, M(0xffffff, { map: ctex(256, 256, (c, w, h) => { c.fillStyle = '#25282d'; c.fillRect(0, 0, w, h); speckle(c, w, h, 3500, .4); }, [10, 8]), roughness: .28, metalness: .22 }), -78.4, 0, -195, -Math.PI / 2).raycast = _noRay;
   slab(-111, -108, ZN, -130); slab(-98, -95, ZN, -130);
   box(1.2, 1.4, -130 - ZN, M(0x55524c, { roughness: .9 }), -111.6, -.55, zMid).raycast = _noRay;
   { const dash = new THREE.MeshBasicMaterial({ map: ctex(32, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(220,210,170,.55)'; c.fillRect(12, 0, 8, 64); }, [1, (-130 - ZN) / 6]), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
@@ -3870,7 +3868,9 @@ function barDocks(g, q) {
     plane(8, 3, M(0x3a3a36, { metalness: .5, roughness: .5, transparent: true, opacity: .9, map: wire.map }), -95.2, 1.65, -156, 0, Math.PI / 2).raycast = _noRay;
     plane(4.4, .9, mueText('TRANSPORTES FERRARO', 'PROPIEDAD PRIVADA · PROHIBIDO EL PASO', 4.4, .9, '#e8d890', '#1a1410', '700 70px Georgia, serif'), -95.35, 2.2, -156, 0, -Math.PI / 2).raycast = _noRay;
     plane(36, 60, M(0x2a2c2e, { roughness: .4 }), -78, .02, -160, -Math.PI / 2).raycast = _noRay;
-    const wh = building(F, -175, -3 - 26, 26, 10, 11, 2); wh.raycast = _noRay;
+    { const br = M(0xffffff, { map: tiles('#5a3a2c', '#523428', 4, [8, 3]), roughness: .9 }); box(10, 9, 26, br, -67, 4.5, -175).raycast = _noRay; box(10.4, .4, 26.4, M(0x2a2622), -67, 9.1, -175).raycast = _noRay;
+      plane(5, 4.4, M(0x4a5050, { roughness: .6, metalness: .4 }), -72.03, 2.2, -175, 0, -Math.PI / 2).raycast = _noRay;
+      plane(6, 1, mueText('FERRARO', 'ALMACÉN Nº 2', 6, 1, '#e8d890', '#1a1410', '700 90px Georgia, serif'), -72.03, 6.4, -175, 0, -Math.PI / 2).raycast = _noRay; }
     [[-140, 0x5a1e1a, 'FERRARO'], [-168, 0x1e2a3a, 'FERRARO']].forEach(([z, c, l], i) => { const t = mueTruck(c, l); t.position.set(-84, 0, z); t.rotation.y = -Math.PI / 2 + i * .2; g.add(t); });
     const crate = M(0x6a5236, { roughness: .9 });
     [[-90, -136, 3], [-88.4, -136, 2], [-90, -182, 2], [-74, -150, 3], [-74, -147.6, 3]].forEach(([x, z, n]) => { for (let i = 0; i < n; i++) box(1.6, 1.4, 1.6, crate, x, .7 + i * 1.4, z).raycast = _noRay; });
@@ -3885,6 +3885,13 @@ function barDocks(g, q) {
     for (let x = -110; x <= -96; x += 3.5) { const s = box(3.4, 6 + Math.random() * 4, 14, M(0x3a302a, { roughness: .9 }), x, 4, ZN - 14); s.raycast = _noRay; }
   }
 
+  // ---- detrás de la acera este, la ciudad sigue (manzanas de relleno: no se puede llegar a ellas)
+  for (let z = -74; z > -200; z -= 22) for (let x = -56; x < -24; x += 20) {
+    const w = 15 + Math.random() * 4, d = 17 + Math.random() * 3, cx = x + Math.random() * 2, cz = z - Math.random() * 2;
+    if (z < -128 && x < -50) continue;                                             // el patio de Ferraro
+    if (!barFree(cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2)) continue;
+    const b = building(g, cx, cz, w, d, 14 + Math.random() * 30, Math.floor(Math.random() * 4)); b.raycast = _noRay;
+  }
   // ---- gente de los muelles
   const person = (look, x, z, ry, name, lines, o) => {
     const p = makePerson(Object.assign({ vary: false }, look)); p.group.position.set(x, .15, z); p.group.rotation.y = ry; g.add(p.group); p.gaze = true;
