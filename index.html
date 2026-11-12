@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.1.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.2.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2135,6 +2135,7 @@ function buildBarrio() {
     const MF = barMadisonLandmarks(g, q);                           // Madison Avenue (fase 3): el 1040 y los cruces
     barPark(g, q, { zebra });                                      // Park Avenue (fase 2)
     barMadisonRows(g, row, F); madShops(MF);
+    barDocks(g, q);                                                // los muelles del Hudson (v2.2)
     [-1, 1].forEach(side => { row('x', 0, side, 138, 165); row('x', 0, side, 165, 196, { cheap: true }); row('x', 0, side, -95, -53);
       row('z', 0, side, 48, 75); row('z', 0, side, 75, 130, { cheap: true }); row('z', 0, side, -75, -48); row('z', 0, side, -130, -75, { cheap: true }); });
     // detrás de los almacenes, la ciudad sigue (solo donde queda sitio)
@@ -2147,7 +2148,7 @@ function buildBarrio() {
 
   // ---- colisiones: manzanas, filas exteriores y vallas al final de las avenidas
   BAR.blocks.forEach(([x0, x1, z0, z1], i) => { if (i === 2) { col(-37, 8, -8, 17); col(-37, 23.5, -8, 32); col(-37, 17, -22, 23.5); } else col(x0, z0, x1, z1); });
-  col(-200, -200, -8, -48); col(8, -200, 53, -48); col(-200, 48, -8, 200); col(8, 48, 53, 200);
+  col(-95, -200, -8, -48); col(8, -200, 53, -48); col(-200, 48, -8, 200); col(8, 48, 53, 200);
   col(-95, -200, -53, -8); col(-95, 8, -53, 200); madColliders(); col(138, -260, 260, -8); col(138, 8, 260, 260); col(112, -260, 138, PARK.Z0 - 1);
   col(-27.8, -48, -24.2, -46.3);                                  // escalinata de la comisaría
   col(-36.4, -45, -31.2, -42.8); col(-21.1, -45, -15.9, -42.8); col(-23.1, -47.4, -22.5, -46.8);   // coches patrulla y agente de la puerta
@@ -2362,10 +2363,10 @@ function buildBarrio() {
     if (rainObj.visible) rainUpd(dt); rainObj.position.set(P.x, P.fy || 0, P.z);
     W.fount.update(dt); if (W.alleySteam) W.alleySteam.update(dt);
     (W.sheets || []).forEach(sh => { sh.rotation.x = Math.sin(t * 1.7 + sh.userData.sway) * .14; });
-    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); barCullTick(dt);
+    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.dockTick) W.dockTick(dt, t); barCullTick(dt);
     const zn = barZone(); if (zn !== W._zone && W.mode === 'walk') { W._zone = zn; setLoc(zn, G.free ? todName(W.hour) : (W.walkSub || 'De noche, bajo la lluvia')); }
   };
-  { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
+  { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
   if (G.free) libreBarrio(g, F);   // encargos, piezas y el piso de Franklin
   else storyBarrio(g, F);          // la historia pasa por la calle
 }
@@ -2507,7 +2508,7 @@ function barrioTick() {
   const txt = `${W.obj.label} · ${d < 4 ? 'aquí' : Math.round(d) + ' m'}${W.obj.extra ? ' · ' + W.obj.extra : ''}`; const sp = el.querySelector('span'); if (sp.textContent !== txt) sp.textContent = txt;
 }
 /* ---------- minimapa y reloj de bolsillo (abajo a la izquierda; en táctil, arriba) ---------- */
-const MINI = { R: 78, base: null, sc: 3, X0: -175, X1: 215, Z0: -150, Z1: 150, min: -1, zoom: .62, icons: [] };
+const MINI = { R: 78, base: null, sc: 3, X0: -205, X1: 215, Z0: -210, Z1: 150, min: -1, zoom: .62, icons: [] };
 function barMiniBase() {
   const cv = document.createElement('canvas'); cv.width = (MINI.X1 - MINI.X0) * MINI.sc; cv.height = (MINI.Z1 - MINI.Z0) * MINI.sc;
   MINI.icons = []; drawBarrioMap(cv, { mini: true, X0: MINI.X0, X1: MINI.X1, Z0: MINI.Z0, Z1: MINI.Z1, sc: MINI.sc, icons: MINI.icons });
@@ -2631,14 +2632,26 @@ function openBarrioMap() {
     el.addEventListener('click', e => { if (e.target === el) closeModal(); });
   }
   el.querySelector('#bmap-k').textContent = GP.on ? 'Select o B · cerrar' : isTouch ? 'Toca fuera para cerrar' : 'M o Esc · cerrar';
-  const mcv = el.querySelector('canvas'); mcv._hl = -1; drawBarrioMap(mcv); mapHook(mcv);
+  const mcv = el.querySelector('canvas'); mcv._hl = -1; mcv._region = mueIn(P.x, P.z) ? 'docks' : 'mid';
+  let tabs = el.querySelector('.bmap-tabs');
+  if (!tabs) {   // dos hojas del plano: Midtown y los muelles del Hudson
+    tabs = document.createElement('div'); tabs.className = 'bmap-tabs'; tabs.setAttribute('role', 'tablist'); tabs.style.cssText = 'display:flex;gap:8px;justify-content:center;margin:0 0 8px';
+    [['mid', 'Midtown'], ['docks', 'Los muelles del Hudson']].forEach(([k, t]) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.rg = k; b.textContent = t; b.setAttribute('role', 'tab');
+      b.style.cssText = 'font:15px Georgia,serif;padding:6px 16px;border:1px solid #8a7a5a;border-radius:3px;cursor:pointer;color:#2a241c;background:#efe6cc';
+      b.onclick = (e) => { e.stopPropagation(); mcv._region = k; mcv._hl = -1; drawBarrioMap(mcv); syncTabs(); }; tabs.appendChild(b); });
+    mcv.parentNode.insertBefore(tabs, mcv);
+  }
+  const syncTabs = () => { const h = el.querySelector('#bmap-h'); if (h) h.textContent = mcv._region === 'docks' ? 'Manhattan · Los muelles del Hudson' : 'Manhattan · Midtown y Park Avenue'; tabs.querySelectorAll('button').forEach(b => { const on = b.dataset.rg === mcv._region; b.setAttribute('aria-selected', on); b.style.background = on ? '#2a241c' : '#efe6cc'; b.style.color = on ? '#efe6cc' : '#2a241c'; }); };
+  tabs.querySelectorAll('button').forEach(b => { b.onclick = (e) => { e.stopPropagation(); mcv._region = b.dataset.rg; mcv._hl = -1; drawBarrioMap(mcv); syncTabs(); }; });
+  syncTabs(); drawBarrioMap(mcv); mapHook(mcv);
   openModal(el, () => {});
   if (!isTouch) setTimeout(() => el.querySelector('#bmap-close').focus({ preventScroll: true }), 30);
 }
 function drawBarrioMap(cv, o) {
   o = o || {}; const mini = !!o.mini;
   const c = cv.getContext('2d'), Wd = cv.width, Hd = cv.height;
-  const X0 = mini ? o.X0 : -158, X1 = mini ? o.X1 : 200, Z0 = mini ? o.Z0 : -75, Z1 = mini ? o.Z1 : 75, sc = mini ? o.sc : Math.min(Wd / (X1 - X0), Hd / (Z1 - Z0));
+  const rg = o.region || cv._region || 'mid', dk = !mini && rg === 'docks';
+  const X0 = mini ? o.X0 : dk ? -200 : -158, X1 = mini ? o.X1 : dk ? 20 : 200, Z0 = mini ? o.Z0 : dk ? -196 : -75, Z1 = mini ? o.Z1 : dk ? 12 : 75, sc = mini ? o.sc : Math.min(Wd / (X1 - X0), Hd / (Z1 - Z0));
   const mx = x => (x - X0) * sc + (Wd - (X1 - X0) * sc) / 2, mz = z => (z - Z0) * sc + (Hd - (Z1 - Z0) * sc) / 2;
   if (mini) { const c0 = c.fillText; c.fillText = function () { if (o.text) c0.apply(c, arguments); }; }
   c.fillStyle = '#e6dcc4'; c.fillRect(0, 0, Wd, Hd);
@@ -2652,7 +2665,8 @@ function drawBarrioMap(cv, o) {
   c.fillStyle = '#b8a888'; c.fillRect(mx(PARK.X - 22), mz(PARK.Z1 + 2), 44 * sc, 18 * sc);
   c.fillStyle = '#9fb3bc'; c.fillRect(0, 0, mx(-111), Hd); c.fillStyle = '#b89a70'; c.fillRect(mx(-150), mz(-4), (39) * sc, 8 * sc);
   c.fillStyle = '#7d4a3a'; c.fillRect(mx(-142), mz(-10.9), 15 * sc, 4.6 * sc);
-  c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; c.textAlign = 'center'; c.save(); c.translate(mx(-135), mz(-30)); c.rotate(-Math.PI / 2); c.fillText('Río Hudson', 0, 0); c.restore();
+  c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; c.textAlign = 'center'; c.save(); c.translate(mx(dk ? -185 : -135), mz(dk ? -40 : -30)); c.rotate(-Math.PI / 2); c.fillText('Río Hudson', 0, 0); c.restore();
+  barDocksMap(c, mx, mz, sc, { region: dk ? 'docks' : 'mid' });
   c.fillStyle = '#f2e9d2'; c.fillRect(mx(-22), mz(17), 14 * sc, 6.5 * sc);
   BAR.blocks.forEach(([x0, x1, z0, z1]) => { c.fillStyle = '#c4b590'; c.fillRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); c.strokeStyle = 'rgba(90,80,60,.35)'; c.strokeRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); });
   const [px0, px1, pz0, pz1] = BAR.park; c.fillStyle = '#b9c79a'; c.fillRect(mx(px0), mz(pz0), (px1 - px0) * sc, (pz1 - pz0) * sc);
@@ -2682,6 +2696,7 @@ function drawBarrioMap(cv, o) {
   pin(-11.5, -6, 'Periódicos', '#6a5a3a', '¶');
   pin(-5.55, 10.6, 'Teléfono', '#6a1a14', '☎');
   pin(-130, 0, 'Muelle 84', '#3a4a5a', '⚓');
+  barDocksPins(pin);
   pin(107, -20, 'The Meridian', '#1f3a2c', '♜');
   pin(143, 22, 'Instituto forense', '#3a4a4e', '✚');
   pin(96, -70, '1040 Madison', '#5a1e1a', '♞');
@@ -2751,7 +2766,8 @@ function barrioBackdrop() {
     for (let i = 0, tries = 0; i < n && tries < n * 6; tries++) {
       const a = Math.random() * Math.PI * 2, r = r0 + Math.random() * (r1 - r0), cx = Math.cos(a) * r, cz = Math.sin(a) * r;
       if (ri === 0 && (Math.abs(cx) < 16 || Math.abs(cz) < 16)) continue;          // no tapar el final de las avenidas
-      if (cx < -112 && Math.abs(Math.atan2(cz, -cx)) < .62) continue;                // sobre el río no hay torres: se ve la otra orilla
+      if (cx < -112 && Math.abs(Math.atan2(cz, -cx)) < .62) continue;
+      if (ri < 2 && cx > -240 && cx < -40 && cz < -30 && cz > -300) continue;          // los muelles del Hudson (y su niebla)                // sobre el río no hay torres: se ve la otra orilla
       if (cx > 55 && cx < 170 + ri * 20 && cz > -175 && cz < 175) continue;           // Madison, Park Avenue y sus manzanas
       const w = 14 + Math.random() * 26, d = 14 + Math.random() * 22;
       // cada torre en su solar: nada de edificios metidos unos dentro de otros
@@ -2815,7 +2831,7 @@ function barTime(h, force) {
   if (!W || W.name !== 'barrio') return;
   const t = barWx(todAt(h)), N = t.N;
   _hz.setHex(t.haze);
-  scene.background = _hz.clone(); if (scene.fog) { scene.fog.color.copy(_hz); scene.fog.density = t.fog; }
+  scene.background = _hz.clone(); if (scene.fog) { scene.fog.color.copy(_hz); scene.fog.density = t.fog * (W.fogK || 1); }
   // cielo
   if (W.domeGeo) {
     const p = W.domeGeo.attributes.position, c = W.domeGeo.attributes.color; _c1.setHex(t.glow); _c2.setHex(t.mid); _c3.setHex(t.top);
@@ -2962,7 +2978,7 @@ void main() {
 // malla del río: fina cerca del muelle y cada vez más gruesa hacia el horizonte
 function barWaterGeo() {
   const xs = []; for (let x = BAR_QUAY + .4; x > -280; x -= 1.1) xs.push(x); { let x = -280, st = 1.4; while (x > -811) { x -= st; st *= 1.18; xs.push(Math.max(x, -811)); } }
-  const zs = []; for (let z = -140; z <= 140; z += 1.4) zs.push(z); { let z = 140, st = 1.8; while (z < 450) { z += st; st *= 1.18; zs.push(Math.min(z, 450)); zs.unshift(-Math.min(z, 450)); } }
+  const zs = []; for (let z = -200; z <= 140; z += 1.4) zs.push(z); { let z = 140, st = 1.8; while (z < 450) { z += st; st *= 1.18; zs.push(Math.min(z, 450)); } z = -200; st = 1.8; while (z > -450) { z -= st; st *= 1.18; zs.unshift(Math.max(z, -450)); } }
   const pos = [], idx = [], nx = xs.length, nz = zs.length;
   for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) pos.push(xs[i], 0, zs[j]);
   for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1; idx.push(a, b, c, b, d, c); }   // xs va hacia -x: este orden deja la cara mirando arriba
@@ -3018,7 +3034,7 @@ function barWaterTick(dt, t) {
     if (s.dead) { s.dead -= dt; s.m.position.y -= dt * .6; if (s.dead <= 0) { W.group.remove(s.m); return false; } return true; }
     s.v.y -= 9.8 * dt; s.m.position.addScaledVector(s.v, dt);
     const p = s.m.position;
-    if (p.x > BAR_QUAY - .2 || (p.x > -150.6 && Math.abs(p.z) < 4.1)) { if (p.y < .2) { s.v.set(0, 0, 0); s.dead = 2; } return true; }   // cae en el muelle
+    if (p.x > BAR_QUAY - .2 || (p.x > -150.6 && Math.abs(p.z) < 4.1) || mueOnPier(p.x, p.z)) { if (p.y < .2) { s.v.set(0, 0, 0); s.dead = 2; } return true; }   // cae en el muelle
     const wh = barWaveH(p.x, p.z, t);
     if (p.y <= wh) {
       const hz = Math.hypot(s.v.x, s.v.z);
@@ -3079,11 +3095,11 @@ function barRiver(g, q) {
     plane(w - 2, .8, new THREE.MeshBasicMaterial({ map: barSign(`MUELLE 84 · ALMACÉN ${n}`, null, w - 2, .8, '#e2d6b8', '#2a1e14', '700 90px Georgia, serif') }), x0 + w / 2, h - 1.2, -2.98, 0, 0, F).raycast = _noRay;
     n++;
   };
-  for (const [a, b] of [[-130, -8], [8, 130]]) { let x = a; while (b - x > 6) { const w = Math.min(b - x, rnd(16, 24)); shed(x, w); x += w; } }
+  for (const [a, b] of [[-44, -8], [8, 130]]) { let x = a; while (b - x > 6) { const w = Math.min(b - x, rnd(16, 24)); shed(x, w); x += w; } }
   // detrás de los almacenes, la ciudad sigue
   // la calle del muelle se acaba (de un lado vallas; del otro, la niebla)
-  col(-700, -700, -111, -4.2); col(-700, 4.2, -111, 700); col(-700, -4.2, -150.2, 4.2);
-  col(-111, -700, -95, -46); col(-111, 46, -95, 700);
+  col(-700, 4.2, -111, 700);   // al norte, el agua entre los muelles la pone barDocks col(-700, -4.2, -150.2, 4.2);
+  col(-111, -700, -95, -192); col(-111, 46, -95, 700);
   // gente del muelle
   const fisher = makePerson({ coat: 0x3a3a2e, hat: 'flat', hatColor: 0x2e2a22, skin: 0xc8a088, face: 'heavy', seated: true, vary: false });
   fisher.group.position.set(-148.6, -.12, 2.3); fisher.group.rotation.y = -Math.PI / 2; g.add(fisher.group); fisher.gaze = false; fisher.hand = [V3(-.16, .95, .35), V3(.16, .95, .35)]; fisher.updateArms();
@@ -3601,7 +3617,456 @@ function barCullTick(dt) {
     else if (it.c) { it.o.visible = true; it.c = false; }
   }
 }
-function barZone() { return P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
+function barZone() { return mueIn(P.x, P.z) && P.x < -93 ? 'Los muelles del Hudson' : P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
+
+/* =========================================================
+   LOS MUELLES DEL HUDSON (v2.2): la calle del muelle sigue hacia el norte.
+   Tres muelles sobre el río (el carguero Carolina, el cobertizo de la Hudson Line
+   y el de los pescadores), la taberna El Ancla, la Capitanía, la lonja
+   y el patio de Transportes Ferraro.  Norte = -z.
+   ========================================================= */
+const MUE = {
+  Z0: -46, Z1: -190, END: -168,
+  piers: [{ n: 86, z0: -60, z1: -74, kind: 'carga' }, { n: 88, z0: -104, z1: -118, kind: 'nave' }, { n: 90, z0: -144, z1: -156, kind: 'pesca' }]
+};
+function mueIn(x, z) { return x < -60 && z < -44 && z > -200; }                               // ¿estamos en los muelles?
+function mueOnPier(x, z) { if (x > BAR_QUAY + .2) return false; return MUE.piers.some(p => x > MUE.END && z < p.z0 && z > p.z1); }
+function mueHull(L, B, H, mat, bow) {                                                        // casco: planta extruida hacia arriba (proa en +x)
+  const s = new THREE.Shape(), hl = L / 2, hb = B / 2, bk = L * (bow || .22);
+  s.moveTo(-hl, -hb * .82); s.quadraticCurveTo(-hl, -hb, -hl + 2, -hb); s.lineTo(hl - bk, -hb); s.quadraticCurveTo(hl - bk * .25, -hb * .9, hl, 0);
+  s.quadraticCurveTo(hl - bk * .25, hb * .9, hl - bk, hb); s.lineTo(-hl + 2, hb); s.quadraticCurveTo(-hl, hb, -hl, hb * .82); s.closePath();
+  const geo = new THREE.ExtrudeGeometry(s, { depth: H, bevelEnabled: false, curveSegments: 8 }); geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, mat); m.raycast = _noRay; return m;
+}
+function mueText(text, sub, w, h, bg, fg, font) { return new THREE.MeshBasicMaterial({ map: barSign(text, sub, w, h, bg, fg, font), transparent: bg === 'transparent' }); }
+function mueBoat(color, name) {                                                             // barca de pesca
+  const b = new THREE.Group(), L = 9 + Math.random() * 3;
+  const hull = mueHull(L, 3.2, 2.2, M(color, { roughness: .7 }), .3); hull.position.y = -.9; b.add(hull);
+  box(L * .86, .12, 2.8, M(0x5a4632, { roughness: .9 }), -.3, 1.25, 0, b);
+  box(2.6, 1.7, 2.1, M(0xd8d0c0, { roughness: .8 }), -L * .18, 2.1, 0, b); box(2.9, .14, 2.4, M(0x2a2a2a), -L * .18, 3.0, 0, b);
+  const win = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffd8a0, emissiveIntensity: 1 }); (W.winMats = W.winMats || []).push([win, 1]);
+  box(.05, .5, 1.4, win, -L * .18 + 1.32, 2.4, 0, b);
+  cyl(.07, .09, 5.5, M(0x3a2a1a), L * .12, 4, 0, b, 6);
+  const boom = cyl(.05, .05, 3.6, M(0x3a2a1a), L * .12 - 1.6, 3.2, 0, b, 6); boom.rotation.z = 1.2;
+  if (name) { const p = plane(2.6, .5, mueText(name, null, 2.6, .5, 'transparent', '#e8e0cc', '700 64px Georgia, serif'), -L / 2 - .03, .7, 0, 0, -Math.PI / 2, b); p.raycast = _noRay; }
+  b.traverse(o => { o.raycast = _noRay; }); return { b, L };
+}
+function mueTruck(color, label) {                                                           // camión de reparto de los años cuarenta
+  const t = new THREE.Group(), body = M(color, { roughness: .45, metalness: .3 }), dark = M(0x151515, { roughness: .6 }), tire = M(0x111111, { roughness: .9 });
+  box(2.2, 1.2, 2.1, body, 2.3, 1.15, 0, t); box(1.5, .9, 2.0, body, 3.6, .95, 0, t);                          // morro y cabina
+  box(.05, .55, 1.7, M(0x20282f, { roughness: .1, metalness: .6 }), 1.21 + 2.2, 1.55, 0, t);
+  box(5.2, 2.6, 2.4, M(0x6a6a5e, { roughness: .8 }), -1.6, 1.9, 0, t); box(7.6, .3, 2.3, dark, .6, .5, 0, t);
+  if (label) { [-1, 1].forEach(s => { const p = plane(4.6, .9, mueText(label, null, 4.6, .9, '#6a6a5e', '#f0e6c8', '700 80px Georgia, serif'), -1.6, 2.2, s * 1.21, 0, s > 0 ? 0 : Math.PI, t); p.raycast = _noRay; }); }
+  [[3.3, 1], [3.3, -1], [-2.4, 1], [-2.4, -1], [-3.4, 1], [-3.4, -1]].forEach(([x, s]) => { const w = cyl(.45, .45, .3, tire, x, .45, s * 1.05, t, 14); w.rotation.x = Math.PI / 2; });
+  t.traverse(o => { o.raycast = _noRay; o.castShadow = true; }); return t;
+}
+function mueGull() {
+  const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: 0xe8e4dc, side: THREE.DoubleSide, fog: true });
+  const body = sphere(.12, m, 0, 0, 0, g, 8, 6); body.scale.set(2.4, .8, .9);
+  const wing = (s) => { const w = new THREE.Group(); const p = new THREE.Mesh(new THREE.PlaneGeometry(.3, .7), m); p.rotation.x = -Math.PI / 2; p.position.z = s * .35; w.add(p); g.add(w); return w; };
+  g.userData.w = [wing(1), wing(-1)]; g.traverse(o => { o.raycast = _noRay; }); return g;
+}
+
+function barDocks(g, q) {
+  const F = barFrame('z', -103, 1);           // acera este de la calle del muelle (x local = z del mundo; fachadas en x = -95)
+  const conc = M(0xffffff, { map: tiles('#5a5a58', '#525250', 4, [1, 1]), roughness: .5, metalness: .12 });
+  const slab = (x0, x1, z0, z1, mat) => { const m = (mat || conc).clone(); m.map = m.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.raycast = _noRay; b.castShadow = false; return b; };
+  const ZN = MUE.Z1 - 2, zMid = (-130 + ZN) / 2;
+  // ---- la calle del muelle, hasta el final
+  plane(80, 50, M(0xffffff, { map: ctex(256, 256, (c, w, h) => { c.fillStyle = '#25282d'; c.fillRect(0, 0, w, h); speckle(c, w, h, 3500, .4); }, [12, 8]), roughness: .28, metalness: .22 }), -85, 0, -195, -Math.PI / 2).raycast = _noRay;
+  slab(-111, -108, ZN, -130); slab(-98, -95, ZN, -130);
+  box(1.2, 1.4, -130 - ZN, M(0x55524c, { roughness: .9 }), -111.6, -.55, zMid).raycast = _noRay;
+  { const dash = new THREE.MeshBasicMaterial({ map: ctex(32, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(220,210,170,.55)'; c.fillRect(12, 0, 8, 64); }, [1, (-130 - ZN) / 6]), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    const p = plane(.35, -130 - ZN, dash, -103, .006, zMid, -Math.PI / 2); p.raycast = _noRay; }
+  // ---- los muelles sobre el río
+  const pierM = M(0xffffff, { map: tiles('#5e5c56', '#56544e', 4, [1, 1]), roughness: .6, metalness: .05 });
+  const planks = M(0xffffff, { map: ctex(64, 256, (c, w, h) => { c.fillStyle = '#4a3a2a'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { const r = Math.random(); c.fillStyle = `rgb(${70 + r * 26},${54 + r * 20},${38 + r * 14})`; c.fillRect(0, y + 1, w, 14); } }, [1, 1]), roughness: .85 });
+  const iron = M(0x1a1a1c, { metalness: .6, roughness: .5 }), timber = M(0x3a2c1e, { roughness: .9 });
+  const pil = [], boll = [], lamps = [], rails = [];
+  MUE.piers.forEach(p => {
+    const zc = (p.z0 + p.z1) / 2, wd = p.z0 - p.z1, L = BAR_QUAY - MUE.END, xc = (BAR_QUAY + MUE.END) / 2;
+    if (p.kind === 'pesca') { const m = planks.clone(); m.map = planks.map.clone(); m.map.needsUpdate = true; m.map.wrapS = m.map.wrapT = THREE.RepeatWrapping; m.map.repeat.set(wd / 4, L / 4); m.map.rotation = Math.PI / 2; box(L, .3, wd, m, xc, 0, zc).raycast = _noRay; }
+    else slab(MUE.END, BAR_QUAY, p.z1, p.z0, pierM).position.y = .0;
+    box(L, .25, .3, timber, xc, .18, p.z0 - .15).raycast = _noRay; box(L, .25, .3, timber, xc, .18, p.z1 + .15).raycast = _noRay; box(.3, .25, wd, timber, MUE.END + .15, .18, zc).raycast = _noRay;
+    for (let x = BAR_QUAY - 2; x > MUE.END; x -= 4.5) { pil.push([x, -.85, p.z0 - .2], [x, -.85, p.z1 + .2]); if (Math.abs(x - BAR_QUAY + 20) % 13 < 4.5) boll.push([x, .45, p.z0 - .5], [x, .45, p.z1 + .5]); }
+    [p.z0 - .5, p.z1 + .5].forEach(z => boll.push([MUE.END + .6, .45, z]));
+    lamps.push([MUE.END + 1.2, 0, p.z0 - .6], [MUE.END + 1.2, 0, p.z1 + .6], [-140, 0, p.z0 - .6]);
+    // agua a los lados y al final del muelle
+    col(-700, p.z1, MUE.END - .2, p.z0);
+    // letrero del muelle, a la entrada
+    const sg = new THREE.Group(); sg.position.set(BAR_QUAY - 1.2, 0, p.z0 - .7); g.add(sg);
+    cyl(.06, .06, 3.2, iron, 0, 1.6, 0, sg, 6); const s = plane(2.6, .8, mueText(`MUELLE ${p.n}`, p.kind === 'carga' ? 'CARGA GENERAL' : p.kind === 'nave' ? 'HUDSON LINE' : 'PESCADORES', 2.6, .8, '#e2d6b8', '#2a1e14', '700 90px Georgia, serif'), 0, 3.1, 0, 0, Math.PI / 2, sg); s.raycast = _noRay;
+    const s2 = s.clone(); s2.rotation.y = -Math.PI / 2; sg.add(s2); sg.traverse(o => { o.raycast = _noRay; });
+    col(BAR_QUAY - 1.35, p.z0 - .85, BAR_QUAY - 1.05, p.z0 - .55);
+  });
+  // el agua entre muelle y muelle (la orilla sigue siendo el muro)
+  { const zs = [ZN - 1e3]; MUE.piers.slice().sort((a, b) => a.z1 - b.z1).forEach(p => { zs.push(p.z1, p.z0); }); zs.push(-4.2); for (let i = 0; i < zs.length; i += 2) col(-700, zs[i], BAR_QUAY + .6, zs[i + 1]); }
+  barInst(new THREE.CylinderGeometry(.22, .25, 2.3, 8), M(0x2e261e, { roughness: .9 }), pil);
+  barInst(new THREE.CylinderGeometry(.16, .22, .45, 10), iron, boll); boll.forEach(([x, , z]) => col(x - .2, z - .2, x + .2, z + .2));
+  // bolardos y cabos a lo largo del muro del muelle
+  const qb = []; for (let z = -50; z > ZN; z -= 9) if (!MUE.piers.some(p => z < p.z0 + 1 && z > p.z1 - 1)) qb.push([-110.6, .45, z]);
+  barInst(new THREE.CylinderGeometry(.16, .22, .45, 10), iron, qb); qb.forEach(([x, , z]) => col(x - .2, z - .2, x + .2, z + .2));
+  for (let z = -52; z > ZN; z -= 16) lamps.push([-108.45, 0, z]);
+  (W.parkLamps = W.parkLamps || []).push(...lamps);
+  W.dockFx = [];
+
+  // ---- MUELLE 86: el carguero Carolina, la grúa y la carga
+  const P86 = MUE.piers[0];
+  {
+    const ship = new THREE.Group(), Ls = 64, Bs = 11.5, zS = P86.z1 - 1 - Bs / 2;
+    const hullM = M(0x1c1e22, { roughness: .55, metalness: .2 }), red = M(0x6e1c14, { roughness: .7 }), white = M(0xd8d2c4, { roughness: .7 }), deckM = M(0x5a4a38, { roughness: .9 });
+    const h1 = mueHull(Ls, Bs, 8.5, hullM, .2); h1.position.y = -3.2; ship.add(h1);
+    const h0 = mueHull(Ls + .1, Bs + .1, 1.4, red, .2); h0.position.y = -1.1; ship.add(h0);
+    box(Ls * .78, .2, Bs - .6, deckM, -2, 5.25, 0, ship);
+    // superestructura a popa, chimenea, mástiles y plumas de carga
+    box(12, 3, 9, white, -Ls / 2 + 9, 6.8, 0, ship); box(9, 2.6, 8, white, -Ls / 2 + 9.5, 9.6, 0, ship); box(5, 1.8, 10.6, white, -Ls / 2 + 10.5, 11.8, 0, ship);
+    const port = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffd8a0, emissiveIntensity: 1.1 }); (W.winMats = W.winMats || []).push([port, 1.1]);
+    [-1, 1].forEach(sd => { for (let i = 0; i < 6; i++) box(.7, .5, .04, port, -Ls / 2 + 4.6 + i * 1.7, 7.1, sd * 4.52, ship); for (let i = 0; i < 4; i++) box(1.1, .6, .04, port, -Ls / 2 + 7.6 + i * 1.6, 11.9, sd * 5.32, ship); });
+    for (let i = 0; i < 14; i++) [-1, 1].forEach(sd => sphere(.16, port, -Ls / 2 + 18 + i * 2.8, 3.4, sd * (Bs / 2 - .05), ship, 8, 6));
+    cyl(1.4, 1.5, 6.5, M(0x111111, { roughness: .6 }), -Ls / 2 + 12, 14, 0, ship, 16); cyl(1.42, 1.42, 1.1, M(0xb02a1e, { roughness: .6 }), -Ls / 2 + 12, 15.4, 0, ship, 16);
+    W.shipSmoke = puffs(g, 12, { size: 1.6, rise: 2.2, alpha: .16, dur: 5, drift: 1.4, color: 0x3a3836 }); W.shipSmoke.on = true;
+    const mast = M(0x2a2a2a, { roughness: .6 });
+    [[-2, 1.2], [16, 1.2]].forEach(([x]) => {
+      cyl(.25, .3, 14, mast, x, 12, 0, ship, 8); box(.25, .25, 6, mast, x, 16.5, 0, ship);
+      [-1, 1].forEach(sd => { const b = cyl(.12, .16, 11, mast, x + 4.2, 9.3, sd * 1.8, ship, 6); b.rotation.z = -.95; b.rotation.x = sd * .12; });
+      box(6.5, .9, 5.6, M(0x2a2622, { roughness: .8 }), x + 6.5, 5.7, 0, ship);                      // escotillas
+    });
+    box(.2, 6, .2, mast, Ls / 2 - 6, 8.3, 0, ship);
+    // nombre en la popa (mira a la calle) y en la proa
+    const nm = (w, h) => mueText('CAROLINA', 'NUEVA ORLEANS', w, h, 'transparent', '#e8e0cc', '700 110px Georgia, serif');
+    plane(9, 2.2, nm(9, 2.2), -Ls / 2 - .03, 2.6, 0, 0, -Math.PI / 2, ship).raycast = _noRay;
+    [-1, 1].forEach(sd => { const p = plane(7, 1.1, mueText('CAROLINA', null, 7, 1.1, 'transparent', '#e8e0cc', '700 110px Georgia, serif'), Ls / 2 - 11, 3.6, sd * (Bs / 2 + .02), 0, sd > 0 ? 0 : Math.PI, ship); p.raycast = _noRay; });
+    ship.traverse(o => { o.raycast = _noRay; o.castShadow = true; });
+    ship.rotation.y = Math.PI; g.add(ship);
+    W.floaters.push({ o: ship, x: -146, z: zS, y: .25, len: 26, wid: 5, k: .12, yaw: Math.PI });
+    W.ship = { x: -146, z: zS, L: Ls };
+    W.shipSmoke.origin.set(-146 + Ls / 2 - 12, 17.5, zS);
+    // pasarela del barco al muelle
+    const gw = box(1.2, .12, 3.6, M(0x4a4038, { roughness: .8 }), -123, 2.2, P86.z1 - .9); gw.rotation.x = .55; gw.raycast = _noRay;
+    // grúa de pórtico sobre carriles
+    const crane = new THREE.Group(), cx = -134, cz = (P86.z0 + P86.z1) / 2; crane.position.set(cx, 0, cz); g.add(crane);
+    const cr = M(0x7a3a1e, { roughness: .6, metalness: .3 });
+    [[-3, -4.5], [3, -4.5], [-3, 4.5], [3, 4.5]].forEach(([x, z]) => { box(.6, 10, .6, cr, x, 5.15, z, crane); col(cx + x - .4, cz + z - .4, cx + x + .4, cz + z + .4); });
+    [-4.5, 4.5].forEach(z => box(7, .6, .6, cr, 0, 9.8, z, crane)); [-3, 3].forEach(x => box(.6, .6, 9.6, cr, x, 9.8, 0, crane));
+    [-3, 3].forEach(x => { const d = box(.25, 12.5, .25, cr, x, 5.2, 0, crane); d.rotation.x = .78; });
+    for (let x = BAR_QUAY - 3; x > MUE.END + 2; x -= 1.2) rails.push([x, .17, cz - 4.5], [x, .17, cz + 4.5]);
+    const head = new THREE.Group(); head.position.set(0, 10.4, 0); crane.add(head);
+    box(4.2, 3.2, 4.2, cr, 0, 1.6, 0, head); box(1.2, .9, .05, port, 1, 2.2, 2.12, head);
+    const jib = new THREE.Group(); jib.position.set(0, 2.4, -1.5); jib.rotation.x = .45; head.add(jib);
+    box(.9, .9, 22, cr, 0, 0, -11, jib); box(.5, .5, 21, cr, 0, 1.1, -10.5, jib);
+    const hook = new THREE.Group(); hook.position.set(0, 0, -21.5); jib.add(hook);
+    const cable = cyl(.03, .03, 1, iron, 0, 0, 0, hook, 4);
+    const load = new THREE.Group(); hook.add(load);
+    box(2.4, 1.6, 1.8, M(0x6a5236, { roughness: .9 }), 0, -.8, 0, load); box(2.5, .1, 1.9, M(0x2a2a2a), 0, .05, 0, load);
+    crane.traverse(o => { o.raycast = _noRay; o.castShadow = true; });
+    W.crane = { head, hook, cable, load, len: 9 };
+    // carga en el muelle: cajas, barriles y redes
+    const crate = M(0x6a5236, { roughness: .9 }), crate2 = M(0x4e3e2a, { roughness: .9 });
+    [[-118, -62.6, 3], [-120, -62.6, 2], [-118, -71.6, 2], [-146, -61.8, 3], [-148.4, -61.8, 1], [-156, -72, 2], [-160, -62, 2]].forEach(([x, z, n]) => { for (let i = 0; i < n; i++) box(1.6, 1.4, 1.6, i % 2 ? crate2 : crate, x, .15 + .7 + i * 1.4, z).raycast = _noRay; col(x - .85, z - .85, x + .85, z + .85); });
+    const bar = []; [[-151, -71.6], [-151.8, -71.4], [-151.4, -72.3], [-127, -61.4], [-127.8, -61.6], [-162, -71.8], [-162.8, -72.2]].forEach(([x, z]) => { bar.push([x, .62, z]); col(x - .35, z - .35, x + .35, z + .35); });
+    barInst(new THREE.CylinderGeometry(.32, .32, .95, 12), M(0x2a4a5a, { roughness: .6, metalness: .3 }), bar);
+    const tr = mueTruck(0x2a3a2a, 'CAROLINA LINES'); tr.position.set(-116.5, 0, cz + 1.5); tr.rotation.y = Math.PI; g.add(tr); col(-121, cz + .2, -112.4, cz + 2.8);
+  }
+  barInst(new THREE.BoxGeometry(1.2, .1, .12), iron, rails.map(([x, y, z]) => [x, y, z]));
+
+  // ---- MUELLE 88: el cobertizo de la Hudson Line
+  const P88 = MUE.piers[1];
+  {
+    const zc = (P88.z0 + P88.z1) / 2, x0 = BAR_QUAY - 4.5, x1 = MUE.END + 3, Ln = x0 - x1, xc = (x0 + x1) / 2;
+    const tin = M(0xffffff, { map: ctex(64, 64, (c, w, h) => { c.fillStyle = '#4e5a5a'; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 8) { c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(x, 0, 3, h); c.fillStyle = 'rgba(255,255,255,.06)'; c.fillRect(x + 4, 0, 2, h); } speckle(c, w, h, 300, .25); }, [Ln / 3, 2]), roughness: .7, metalness: .3 });
+    box(Ln, 8, 10, tin, xc, 4.15, zc).raycast = _noRay;
+    const tri = new THREE.Shape(); tri.moveTo(-5.6, 0); tri.lineTo(5.6, 0); tri.lineTo(0, 2.6); tri.closePath();
+    const rg = new THREE.ExtrudeGeometry(tri, { depth: Ln + .8, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(Ln + .8) / 2, 0, 0);
+    const roof = new THREE.Mesh(rg, M(0x2e3434, { roughness: .6, metalness: .4 })); roof.position.set(xc, 8.15, zc); g.add(roof); roof.raycast = _noRay;
+    const front = new THREE.Group(); front.position.set(x0 + .02, 0, zc); front.rotation.y = Math.PI / 2; g.add(front);
+    plane(5.2, 5.6, M(0x141618, { roughness: .9 }), 0, 2.95, 0, 0, 0, front);
+    plane(8.6, 1.3, mueText('MUELLE 88', 'HUDSON LINE · PASAJE Y CARGA', 8.6, 1.3, '#e2d6b8', '#2a1e14', '700 96px Georgia, serif'), 0, 6.8, .02, 0, 0, front);
+    const tri2 = new THREE.Mesh(new THREE.ShapeGeometry(tri), M(0x4e5a5a, { roughness: .7, metalness: .3 })); tri2.position.set(0, 8.15, 0); front.add(tri2);
+    front.traverse(o => { o.raycast = _noRay; });
+    const winM = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, emissive: 0xffd8a0, emissiveIntensity: .7 }); (W.winMats = W.winMats || []).push([winM, .7]);
+    [-1, 1].forEach(sd => { for (let x = x0 - 4; x > x1 + 2; x -= 6) { const p = plane(2.4, 1.1, winM, x, 6.2, zc + sd * 5.02, 0, sd > 0 ? 0 : Math.PI); p.raycast = _noRay; } });
+    col(x1, zc - 5, x0, zc + 5);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(.6, 5, 5.4), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(x0 + .3, 2.5, zc); g.add(hit);
+    inter(hit, { label: 'Mirar dentro del cobertizo', use: async () => { await narr(W.lampK > .5 ? 'Dentro, a oscuras, montañas de baúles con etiquetas de Lisboa, de Génova, de La Habana. Un vigilante ronca sentado en una silla, con la gorra sobre los ojos.' : 'Dentro huele a cuerda mojada y a gasóleo. Los mozos apilan maletas de un barco que llegó de Lisboa esta mañana; nadie te presta atención.'); endDialog(); } });
+  }
+
+  // ---- MUELLE 90: los pescadores
+  const P90 = MUE.piers[2];
+  {
+    const zc = (P90.z0 + P90.z1) / 2;
+    const stripes = ctex(64, 32, (c, w, h) => { for (let x = 0; x < w; x += 16) { c.fillStyle = (x / 16) % 2 ? '#e8e0cc' : '#2a5a6a'; c.fillRect(x, 0, 16, h); } });
+    const fishM = M(0x8a9298, { roughness: .3, metalness: .5 }), iceM = M(0xdfe8ec, { roughness: .2 }), wood = M(0x5a4632, { roughness: .8 });
+    const fish = [];
+    [-118, -126].forEach((x, i) => {
+      const st = new THREE.Group(); st.position.set(x, .15, zc + 3.2); g.add(st);
+      box(3.4, .85, 1.3, wood, 0, .43, 0, st); box(3.3, .12, 1.2, iceM, 0, .9, 0, st);
+      [[-1.6, -.6], [1.6, -.6], [-1.6, .6], [1.6, .6]].forEach(([a, b]) => cyl(.04, .04, 2.4, wood, a, 1.2, b, st, 6));
+      const aw = plane(3.8, 1.6, M(0xffffff, { map: stripes, side: THREE.DoubleSide, roughness: .8 }), 0, 2.3, 0, -Math.PI / 2 + .25, 0, st);
+      for (let k = 0; k < 9; k++) fish.push([x - 1.4 + (k % 5) * .7, 1.17, zc + 3.2 - .3 + Math.floor(k / 5) * .55]);
+      st.traverse(o => { o.raycast = _noRay; }); col(x - 1.8, zc + 2.4, x + 1.8, zc + 4);
+    });
+    const fg = new THREE.SphereGeometry(.12, 8, 6); fg.scale(2.6, .7, 1); barInst(fg, fishM, fish);
+    // nasas y redes
+    const trap = new THREE.MeshBasicMaterial({ color: 0x3a3a34, wireframe: true });
+    [[-150, zc - 4.6], [-151.2, zc - 4.6], [-150.6, zc - 3.6], [-158, zc + 4.4], [-159.2, zc + 4.4]].forEach(([x, z], i) => { const t = box(1, .6, .8, trap, x, .45 + (i === 2 ? .6 : 0), z); t.raycast = _noRay; col(x - .5, z - .4, x + .5, z + .4); });
+    box(2.4, .3, 1.6, M(0x5a5a3a, { roughness: 1 }), -138, .3, zc - 4.2).raycast = _noRay;
+    // barcas amarradas a los dos lados
+    [[-128, P90.z0 + 2.4, 0x3a5a6a, 'SANTA RITA'], [-152, P90.z0 + 2.4, 0x6a2a22, 'GAVIOTA'], [-140, P90.z1 - 2.4, 0x2a3a2a, 'MARY ANN']].forEach(([x, z, c, n], i) => {
+      const { b, L } = mueBoat(c, n); g.add(b); W.floaters.push({ o: b, x, z, y: .1, len: L / 2, wid: 1.4, k: .8, yaw: i % 2 ? 0 : Math.PI });
+    });
+  }
+  // barcas y basura flotando entre muelles
+  [[-182, -95, 0x3a3a3a], [-196, -130, 0x5a4a2a]].forEach(([x, z, c], i) => { const { b, L } = mueBoat(c, null); g.add(b); W.floaters.push({ o: b, x, z, y: .1, len: L / 2, wid: 1.4, k: .8, yaw: i ? .8 : 2.2 }); });
+
+  // ---- la acera este: El Ancla, la Capitanía, la lonja y el patio de Ferraro
+  const frontRow = (z0, z1, h, mat) => { const b = box(18, h, z0 - z1, mat, -86, h / 2, (z0 + z1) / 2); b.raycast = _noRay; barRect(-95, z1, -77, z0); return b; };
+  // El Ancla
+  {
+    const clap = M(0xffffff, { map: ctex(64, 64, (c, w, h) => { c.fillStyle = '#1e3a40'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, y, w, 2); } speckle(c, w, h, 260, .3); }, [6, 3]), roughness: .8 });
+    frontRow(-48, -68, 8, clap); box(18.6, .5, 20.6, M(0x1a1a1a), -86, 8.2, -58).raycast = _noRay;
+    const neon = (txt, col, font) => textTex(512, 128, 'rgba(0,0,0,0)', (c, w, h) => { c.shadowColor = col; c.shadowBlur = 18; c.fillStyle = col; c.font = font; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, w / 2, h / 2); c.fillText(txt, w / 2, h / 2); });
+    const sgM = new THREE.MeshBasicMaterial({ map: neon('EL ANCLA', '#ff5a4a', '700 84px Georgia, serif'), transparent: true, depthWrite: false, fog: false });
+    const sg = plane(7, 1.75, sgM, -95.1, 5.6, -58, 0, -Math.PI / 2); sg.raycast = _noRay; W.dockNeon = sgM;
+    const h = haloSprite(0xff5a4a, 6, .35); h.position.set(-95.6, 5.6, -58); g.add(h);
+    const port = new THREE.MeshStandardMaterial({ color: 0x221a14, emissive: 0xe8903a, emissiveIntensity: .55 }); (W.winMats = W.winMats || []).push([port, .55]);
+    [-51.5, -55, -61, -64.5].forEach(z => { const w = new THREE.Mesh(new THREE.CircleGeometry(.6, 18), port); w.position.set(-95.04, 2.2, z); w.rotation.y = -Math.PI / 2; g.add(w); w.raycast = _noRay; const r = new THREE.Mesh(new THREE.TorusGeometry(.62, .07, 6, 18), M(0xb08a45, { metalness: .8, roughness: .3 })); r.position.copy(w.position); r.rotation.y = Math.PI / 2; g.add(r); r.raycast = _noRay; });
+    plane(1.5, 2.4, M(0x2a1a10, { roughness: .7 }), -95.03, 1.35, -58, 0, -Math.PI / 2).raycast = _noRay;
+    const lifebuoy = new THREE.Mesh(new THREE.TorusGeometry(.42, .12, 8, 16), M(0xd84a2a, { roughness: .6 })); lifebuoy.position.set(-95.15, 2.6, -60.2); lifebuoy.rotation.y = Math.PI / 2; g.add(lifebuoy); lifebuoy.raycast = _noRay;
+    [[-96.4, -52], [-96.4, -64]].forEach(([x, z]) => { cyl(.34, .34, .95, M(0x4a3420, { roughness: .8 }), x, .63, z, null, 12).raycast = _noRay; col(x - .4, z - .4, x + .4, z + .4); });
+    barDoor(F, -58, 1.6, { label: 'Entrar en El Ancla', use: async () => { await narr('Desde la puerta de El Ancla se oye un acordeón desafinado y una carcajada que parece un trueno.'); await say('Franklin', 'Otro rato. Si entro ahora, salgo cantando.'); endDialog(); } });
+  }
+  // la Capitanía del puerto
+  {
+    const stone = M(0xffffff, { map: tiles('#8a8478', '#827c70', 4, [5, 4]), roughness: .85 });
+    frontRow(-70, -100, 13, stone); box(18.6, .6, 30.6, M(0x6a645a), -86, 13.2, -85).raycast = _noRay;
+    const winM = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, emissive: 0xffd8a0, emissiveIntensity: .8 }); (W.winMats = W.winMats || []).push([winM, .8]);
+    for (let z = -73; z > -98; z -= 3.3) [4.6, 8.4, 11.6].forEach(y => { if (Math.abs(z + 85) < 2 && y < 5) return; const p = plane(1.3, 1.9, winM, -95.03, y, z, 0, -Math.PI / 2); p.raycast = _noRay; });
+    box(.6, 4.2, 4.6, stone, -95.3, 2.1, -85).raycast = _noRay; plane(1.8, 2.6, M(0x2a1e14), -95.62, 1.45, -85, 0, -Math.PI / 2).raycast = _noRay;
+    box(1.2, .25, 5.2, M(0x6a645a), -95.6, 4.3, -85).raycast = _noRay;
+    plane(7.5, 1.1, mueText('CAPITANÍA DEL PUERTO', 'AUTORIDAD PORTUARIA DE NUEVA YORK', 7.5, 1.1, '#2a2e34', '#e8d8a8', '700 80px Georgia, serif'), -95.05, 5.6, -85, 0, -Math.PI / 2).raycast = _noRay;
+    // reloj y asta de bandera
+    const clock = new THREE.Mesh(new THREE.CircleGeometry(.9, 24), new THREE.MeshStandardMaterial({ color: 0xe8e0cc, emissive: 0xffeec8, emissiveIntensity: .4 })); clock.position.set(-95.04, 10, -85); clock.rotation.y = -Math.PI / 2; g.add(clock); clock.raycast = _noRay;
+    W.dockClock = []; [[.55, .06], [.75, .04]].forEach(([l, w]) => { const hnd = new THREE.Group(); hnd.position.set(-95.1, 10, -85); hnd.rotation.order = 'YXZ'; hnd.rotation.y = -Math.PI / 2; g.add(hnd); box(w, l, .02, M(0x1a1a1a), 0, l / 2 - .05, 0, hnd); W.dockClock.push(hnd); });
+    cyl(.06, .08, 6, M(0xd8d2c4), -95.6, 16, -78, null, 6).raycast = _noRay;
+    const flag = plane(2.2, 1.3, M(0xffffff, { map: ctex(64, 40, (c, w, h) => { for (let i = 0; i < 13; i++) { c.fillStyle = i % 2 ? '#e8e0d4' : '#a8261c'; c.fillRect(0, i * h / 13, w, h / 13 + 1); } c.fillStyle = '#1e2e5a'; c.fillRect(0, 0, w * .42, h * 7 / 13); }), side: THREE.DoubleSide, roughness: .8 }), -95.6, 18.2, -76.9, 0, 0); flag.raycast = _noRay; W.dockFlag = flag;
+    barDoor(F, -85, 2, { label: 'Llamar a la puerta de la Capitanía', use: async () => { await narr(W.hour > 8 && W.hour < 18 ? 'Un administrativo con manguitos asoma la cabeza: «El capitán está fuera, en la acera. Siempre está fuera».' : 'Cerrado. Un cartel escrito a mano: «Para urgencias, el capitán Halvorsen vive en el muelle. Literalmente».'); endDialog(); } });
+  }
+  // la lonja
+  {
+    const brick = M(0x5a3a2c, { roughness: .9 });
+    frontRow(-102, -128, 9, brick); box(18.6, .5, 26.6, M(0x2a2622), -86, 9.1, -115).raycast = _noRay;
+    [-108.5, -121.5].forEach(z => { plane(5.6, 4.2, M(0x0e0c0a, { roughness: 1 }), -95.03, 2.1, z, 0, -Math.PI / 2).raycast = _noRay; const sh = box(.15, 1.8, 5.8, M(0x5a6060, { roughness: .6, metalness: .4 }), -95.1, 3.3, z); sh.raycast = _noRay;
+      const l = new THREE.PointLight(0xffd8a0, 0, 7, 2); l.position.set(-93.5, 3, z); g.add(l); W.dockFx.push(l); });
+    plane(9, 1.1, mueText('LONJA DEL HUDSON', 'PESCADO FRESCO · TODOS LOS DÍAS DESDE LAS 4', 9, 1.1, '#e2d6b8', '#2a1e14', '700 90px Georgia, serif'), -95.04, 6.6, -115, 0, -Math.PI / 2).raycast = _noRay;
+    [[-96.2, -104], [-96.2, -105.4], [-96.9, -104.7]].forEach(([x, z], i) => { box(1, .6, .8, M(0xc8d0d4, { roughness: .3 }), x, .45 + (i === 2 ? .6 : 0), z).raycast = _noRay; col(x - .5, z - .4, x + .5, z + .4); });
+    const tr = mueTruck(0xd8d2c4, 'PESCADOS O\'NEILL'); tr.position.set(-99.6, 0, -125); tr.rotation.y = Math.PI / 2; g.add(tr); col(-100.9, -129, -98.3, -120.6);
+  }
+  // el patio de Transportes Ferraro (vallado: se ve, pero no se entra)
+  {
+    const wire = new THREE.MeshStandardMaterial({ map: ctex(64, 64, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = 'rgba(150,150,140,.9)'; c.lineWidth = 2; for (let i = -64; i < 128; i += 12) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i + 64, 64); c.stroke(); c.beginPath(); c.moveTo(i + 64, 0); c.lineTo(i, 64); c.stroke(); } }, [1, 1]), transparent: true, alphaTest: .4, side: THREE.DoubleSide, metalness: .4, roughness: .6 });
+    const fence = (z0, z1, x) => { const L = z0 - z1, m = wire.clone(); m.map = wire.map.clone(); m.map.needsUpdate = true; m.map.repeat.set(L / 1.5, 2); const p = plane(L, 3, m, x, 1.65, (z0 + z1) / 2, 0, Math.PI / 2); p.raycast = _noRay; const posts = []; for (let z = z0; z >= z1; z -= 3) posts.push([x, 1.6, z]); return posts; };
+    let posts = fence(-130, -152, -95.2).concat(fence(-160, -188, -95.2));
+    barInst(new THREE.CylinderGeometry(.05, .05, 3.2, 6), M(0x5a5a56, { metalness: .5 }), posts);
+    plane(8, 3, M(0x3a3a36, { metalness: .5, roughness: .5, transparent: true, opacity: .9, map: wire.map }), -95.2, 1.65, -156, 0, Math.PI / 2).raycast = _noRay;
+    plane(4.4, .9, mueText('TRANSPORTES FERRARO', 'PROPIEDAD PRIVADA · PROHIBIDO EL PASO', 4.4, .9, '#e8d890', '#1a1410', '700 70px Georgia, serif'), -95.35, 2.2, -156, 0, -Math.PI / 2).raycast = _noRay;
+    plane(36, 60, M(0x2a2c2e, { roughness: .4 }), -78, .02, -160, -Math.PI / 2).raycast = _noRay;
+    const wh = building(F, -175, -3 - 26, 26, 10, 11, 2); wh.raycast = _noRay;
+    [[-140, 0x5a1e1a, 'FERRARO'], [-168, 0x1e2a3a, 'FERRARO']].forEach(([z, c, l], i) => { const t = mueTruck(c, l); t.position.set(-84, 0, z); t.rotation.y = -Math.PI / 2 + i * .2; g.add(t); });
+    const crate = M(0x6a5236, { roughness: .9 });
+    [[-90, -136, 3], [-88.4, -136, 2], [-90, -182, 2], [-74, -150, 3], [-74, -147.6, 3]].forEach(([x, z, n]) => { for (let i = 0; i < n; i++) box(1.6, 1.4, 1.6, crate, x, .7 + i * 1.4, z).raycast = _noRay; });
+    box(2.2, 2.6, 2.2, M(0x3a4a3a, { roughness: .7 }), -92.6, 1.3, -150.6).raycast = _noRay;
+    const bw = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, emissive: 0xffe0a0, emissiveIntensity: .9 }); (W.winMats = W.winMats || []).push([bw, .9]); plane(1.2, .7, bw, -93.74, 1.8, -150.6, 0, -Math.PI / 2).raycast = _noRay;
+  }
+  // el final de la calle del muelle: valla y caballetes
+  {
+    const saw = M(0xe8e2d0, { roughness: .7 }), sawR = M(0xb02a1e, { roughness: .7 });
+    for (let i = -2; i <= 2; i++) { const s = new THREE.Group(); s.position.set(-103 + i * 3, 0, ZN + 1.2); g.add(s); box(2.6, .22, .08, i % 2 ? saw : sawR, 0, .95, 0, s); [-1, 1].forEach(o => { const l = box(.08, 1.0, .08, M(0x3a3028), o * 1.1, .5, 0, s); l.rotation.z = o * .12; }); s.traverse(o => { o.raycast = _noRay; }); }
+    const sg = plane(3.6, .9, mueText('FIN DEL MUELLE', 'AUTORIDAD PORTUARIA · SOLO PERSONAL AUTORIZADO', 3.6, .9, '#e8d890', '#1a1410', '700 110px Georgia, serif'), -103, 1.75, ZN + 1.26, 0, 0); sg.raycast = _noRay;
+    for (let x = -110; x <= -96; x += 3.5) { const s = box(3.4, 6 + Math.random() * 4, 14, M(0x3a302a, { roughness: .9 }), x, 4, ZN - 14); s.raycast = _noRay; }
+  }
+
+  // ---- gente de los muelles
+  const person = (look, x, z, ry, name, lines, o) => {
+    const p = makePerson(Object.assign({ vary: false }, look)); p.group.position.set(x, .15, z); p.group.rotation.y = ry; g.add(p.group); p.gaze = true;
+    W.speakers[name] = p; col(x - .3, z - .3, x + .3, z + .3);
+    if (o && o.anim && p.play) { try { p.play(o.anim, { loop: true }); } catch (e) {} }
+    let i = 0;
+    if (lines) inter(p.hitBox || p.group, { label: o && o.label || `Hablar con ${name.toLowerCase().startsWith('el ') || name.toLowerCase().startsWith('la ') ? name.toLowerCase() : name}`, use: async () => { const L = typeof lines === 'function' ? lines() : lines[i++ % lines.length]; if (L) { for (const [who, t] of L) await say(who, t); } endDialog(); } });
+    return p;
+  };
+  // el capitán del puerto (y su encargo)
+  const cap = person({ coat: 0x1e2a3a, longCoat: true, hat: 'cap', hatColor: 0x161c26, skin: 0xe0b8a0, face: 'heavy', hair: 0xd8d4cc }, -96.4, -82.4, -Math.PI / 2 - .3, 'Capitán Halvorsen', null);
+  W.dockCap = cap;
+  inter(cap.hitBox || cap.group, { label: 'Hablar con el capitán del puerto', use: async () => { if (typeof mueCapTalk === 'function' && await mueCapTalk()) return;
+    const L = [['Capitán Halvorsen', 'Cuarenta años en este muelle, detective. He visto llegar a medio mundo con una maleta de cartón. Y a la otra mitad, irse sin ella.'], ['Capitán Halvorsen', 'Si ve un barco que entra de noche sin luces, no es asunto suyo. Hasta que lo es.'], ['Capitán Halvorsen', 'El Carolina zarpa el viernes para Nueva Orleans. Si quiere un consejo: no se suba. La comida es peor que en el Sam\'s.']];
+    await say(...L[(W._capI = ((W._capI || 0) + 1)) % L.length]); endDialog(); } });
+  person({ coat: 0x2e3a4a, pants: 0x2a2e36, hat: 'flat', hatColor: 0x222428, skin: 0xa87a5a, face: 'round' }, -122.4, -66.6, Math.PI / 2, 'Estibador', [[['Estibador', 'Tres días descargando el Carolina y todavía no le hemos visto el fondo.'], ['Franklin', '¿Qué traía?'], ['Estibador', 'Lo que pone en los papeles. Y lo que no, mejor no preguntarlo en voz alta.']], [['Estibador', 'La grúa la maneja el sueco. Si se le cae una caja encima, por lo menos le pedirá perdón en dos idiomas.']]], { label: 'Hablar con el estibador' });
+  person({ coat: 0x5a5044, pants: 0x2a2a2a, hat: 'flat', hatColor: 0x3a3a3a, skin: 0xd8b09a, face: 'lean' }, -124.2, P86.z1 + 1.4, -Math.PI / 2, 'Marinero', [[['Marinero', 'Del Carolina, sí señor. Veintidós días desde Nueva Orleans con niebla, tormenta y un cocinero que no sabe freír un huevo.'], ['Franklin', '¿Y aquí qué le parece?'], ['Marinero', 'Más frío. Y la gente camina más deprisa, como si alguien la estuviera persiguiendo.']], [['Marinero', 'Esta noche, El Ancla. El que pierda al pulso con Big Tony paga la ronda. Yo siempre pago la ronda.']]], { label: 'Hablar con el marinero' });
+  person({ coat: 0x6a6a5a, hairStyle: 'bob', hair: 0x6a4a2a, wcoat: 0x4a5a5a, skin: 0xe0bca4, face: 'round' }, -122, (P90.z0 + P90.z1) / 2 + 4.6, Math.PI, 'Rosa, la pescadera', [[['Rosa, la pescadera', '¡Bacalao, arenque, ostras de Long Island! ¿Le pongo algo, guapo? Las ostras van bien para pensar.'], ['Franklin', 'Hoy no. Pero me lo apunto.']], [['Rosa, la pescadera', 'Aquí abrimos a las cuatro de la mañana. A esa hora el río habla, detective. Solo hay que saber escucharlo.']], [['Rosa, la pescadera', 'Los de Ferraro compran hielo a montones y nunca se llevan pescado. Usted dirá para qué quiere tanto hielo un camión de mudanzas.']]], { label: 'Hablar con la pescadera' });
+  person({ coat: 0x2a2a2a, longCoat: true, hat: 'fedora', hatColor: 0x1a1a1a, skin: 0xc8a088, face: 'heavy' }, -96.6, -154.2, Math.PI / 2 + .2, 'Vigilante de Ferraro', [[['Vigilante de Ferraro', 'Esto es propiedad privada, amigo. Siga caminando.'], ['Franklin', 'Solo miraba los camiones. Bonita flota.'], ['Vigilante de Ferraro', 'Mire los barcos, que son más bonitos y no muerden.']], [['Vigilante de Ferraro', 'El señor Ferraro no recibe a nadie sin cita. Y no da citas.']]], { label: 'Hablar con el vigilante de Ferraro' });
+  // gaviotas
+  W.gulls = []; for (let i = 0; i < [3, 5, 7][q]; i++) { const gl = mueGull(); g.add(gl); W.gulls.push({ o: gl, cx: -130 - Math.random() * 30, cz: -70 - Math.random() * 90, r: 8 + Math.random() * 14, y: 9 + Math.random() * 9, sp: (.25 + Math.random() * .25) * (i % 2 ? 1 : -1), a: Math.random() * 7, ph: Math.random() * 7 }); }
+  // tirar piedras desde los muelles
+  const throwDef = { label: 'Tirar una piedra al río', use: async () => { barThrowStone(); } };
+  const hitM = new THREE.MeshBasicMaterial({ visible: false });
+  MUE.piers.forEach(p => { const h = new THREE.Mesh(new THREE.BoxGeometry(.2, 1.6, p.z0 - p.z1 - 1), hitM); h.position.set(MUE.END + .2, .9, (p.z0 + p.z1) / 2); g.add(h); inter(h, throwDef); });
+  W.dockTick = mueTick;
+}
+// la gente que pasea por los muelles (después de crear los peatones del barrio)
+function barDocksPeds(g, q) {
+  const looks = [{ coat: 0x2e3a4a, pants: 0x2a2e36, hat: 'flat', hatColor: 0x222428 }, { coat: 0x4a4038, hat: 'flat', hatColor: 0x2a2620 }, { coat: 0x3a3a2e, longCoat: true, hat: 'fedora', hatColor: 0x2a2a22 }, { coat: 0x5a3a2a, hat: 'flat', hatColor: 0x3a2a1a }];
+  for (let i = 0; i < [2, 3, 4][q]; i++) {
+    const p = makePerson(Object.assign({ skin: [0xc8a088, 0xa87a5a, 0xd8b09a, 0x9a6a4a][i % 4] }, looks[i % looks.length])); g.add(p.group); p.gaze = false;
+    const R = [-109.7, -96.4, -186, -50], per = 2 * (R[1] - R[0] + R[3] - R[2]), colR = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(colR);
+    W.peds.push({ p, R, per, s: per * i / 4 + Math.random() * 20, dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .3, ph: Math.random() * 6, col: colR });
+  }
+}
+function mueTick(dt, t) {
+  const inD = mueIn(P.x, P.z);
+  W.fogK = (W.fogK || 1) + ((inD ? 1.45 : 1) - (W.fogK || 1)) * Math.min(1, dt * .8);
+  // la grúa gira despacio y la carga se balancea
+  const C = W.crane; if (C) { C.head.rotation.y = Math.sin(t * .06) * .55; const sw = Math.sin(t * .9) * .06; C.hook.rotation.x = -.45 + sw; const L = C.len + Math.sin(t * .11) * 2.5; C.cable.scale.y = L; C.cable.position.y = -L / 2; C.load.position.y = -L; }
+  if (W.shipSmoke) W.shipSmoke.update(dt);
+  (W.gulls || []).forEach(o => { o.a += o.sp * dt; const x = o.cx + Math.cos(o.a) * o.r, z = o.cz + Math.sin(o.a) * o.r; o.o.position.set(x, o.y + Math.sin(t * .7 + o.ph) * .8, z); o.o.rotation.y = -o.a - (o.sp > 0 ? 0 : Math.PI); const f = Math.sin(t * 7 + o.ph) * .6; o.o.userData.w[0].rotation.x = f; o.o.userData.w[1].rotation.x = -f; });
+  if (W.dockFlag) W.dockFlag.rotation.y = Math.sin(t * 1.3) * .25;
+  if (W.dockClock && W.hour != null) { const h = W.hour % 12, m = (W.hour * 60) % 60; W.dockClock[0].rotation.z = -h / 12 * Math.PI * 2; W.dockClock[1].rotation.z = -m / 60 * Math.PI * 2; }
+  if (W.dockNeon) W.dockNeon.opacity = W.lampK > .3 ? (Math.random() < .015 ? .35 : 1) : .55;
+  (W.dockFx || []).forEach(l => { l.intensity = (W.lampK || 0) > .4 ? 3 : 0; });
+  // la sirena de algún barco, de vez en cuando
+  if (inD && A.ctx && !S.paused) { W.hornT = (W.hornT == null ? 20 : W.hornT) - dt; if (W.hornT <= 0) { W.hornT = 45 + Math.random() * 60; const c = A.ctx.currentTime; tone(98, c, 3.2, 'sawtooth', .02); tone(147, c, 3.2, 'sawtooth', .012); } }
+}
+function barDocksMap(c, mx, mz, sc, o) {
+  c.fillStyle = '#f2e9d2'; c.fillRect(mx(-111), mz(-192), 16 * sc, 146 * sc);
+  c.fillStyle = '#b8b0a0'; MUE.piers.forEach(p => c.fillRect(mx(MUE.END), mz(p.z1), (BAR_QUAY - MUE.END) * sc, (p.z0 - p.z1) * sc));
+  c.fillStyle = '#6e7880'; c.fillRect(mx(MUE.END + 3), mz(-116), (BAR_QUAY - 4.5 - MUE.END - 3) * sc, 10 * sc);
+  if (W.ship) { c.fillStyle = '#3a3e44'; c.fillRect(mx(W.ship.x - W.ship.L / 2), mz(MUE.piers[0].z1 - 12.5), W.ship.L * sc, 11.5 * sc); }
+  c.fillStyle = '#c4b590'; c.fillRect(mx(-95), mz(-190), 18 * sc, 144 * sc);
+  c.fillStyle = '#a89a78'; c.fillRect(mx(-95), mz(-188), 35 * sc, 58 * sc);
+  c.fillStyle = '#5a5244'; c.font = '13px "Special Elite",monospace'; c.textAlign = 'center';
+  if (o && o.region === 'docks') { c.save(); c.translate(mx(-103) + 4, mz(-120)); c.rotate(-Math.PI / 2); c.fillText('MUELLE DEL HUDSON', 0, 0); c.restore();
+    c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; [86, 88, 90].forEach((n, i) => { const p = MUE.piers[i]; c.fillText(`Muelle ${n}`, mx(-176), mz((p.z0 + p.z1) / 2) + 5); }); }
+}
+function barDocksPins(pin) {
+  pin(-96, -58, 'El Ancla', '#7a2a2a', '♦');
+  pin(-96, -85, 'Capitanía del puerto', '#2a3a5a', '⚑');
+  pin(-96, -115, 'Lonja del Hudson', '#3a5a5a', '≈');
+  pin(-140, -84, 'El Carolina (muelle 86)', '#3a3e44', '⚓');
+  pin(-96, -156, 'Transportes Ferraro', '#5a3a2a', '■');
+  if (G.free) { const D = libData(); if (!D.done.carga) pin(-96.4, -79, 'Encargo: el capitán del puerto', '#b08a3a', '!'); }
+}
+
+/* ---------- encargo: la carga del Carolina ---------- */
+async function mueCapTalk() {
+  if (!G.free) return false;
+  const D = libData();
+  if (D.done.carga) { await say('Capitán Halvorsen', 'Aduanas se llevó el whisky de Ferraro en dos camiones. Le debo una, detective. En este muelle eso vale más que un cheque.'); endDialog(); return true; }
+  if (LIB.act && LIB.act.id === 'carga') {
+    if (LIB.act.found >= 3) { await mueWinCarga(); return true; }
+    const i = await choose(['Sigo buscando', 'Lo dejo (abandonar el encargo)'], 'La carga del Carolina'); if (i === 1) libFail('El capitán se encoge de hombros: «Ya aparecerán. O no».'); endDialog(); return true;
+  }
+  if (LIB.act || D.q) { await say('Capitán Halvorsen', 'Le veo con prisa, detective. Vuelva cuando tenga las manos libres.'); endDialog(); return true; }
+  await say('Capitán Halvorsen', 'Detective. Un favor, si tiene un rato: anoche descargaron el Carolina y faltan tres cajas en el manifiesto.');
+  await say('Capitán Halvorsen', 'Llevan una estrella roja pintada. Seguro que algún mozo las dejó donde no tocaba: el 88, el muelle de los pescadores, qué sé yo.');
+  const i = await choose(['Las busco<small>Encargo · encuentra las tres cajas con la estrella roja por los muelles</small>', 'Ahora no, capitán'], 'La carga del Carolina');
+  if (i === 0) { await say('Franklin', 'Tres cajas con una estrella roja. Si están en el muelle, aparecerán.'); endDialog(); mueStartCarga(); } else endDialog();
+  return true;
+}
+function mueStartCarga() {
+  const g = W.group, star = ctex(128, 128, (c, w, h) => { c.fillStyle = '#6a5236'; c.fillRect(0, 0, w, h); speckle(c, w, h, 400, .3); c.fillStyle = '#b81e14'; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 22 : 52, a = -Math.PI / 2 + i * Math.PI / 5; c.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } c.closePath(); c.fill(); });
+  const spots = [[-113.8, -116.4, 'p88'], [-161, -145.6, 'p90'], [-96.3, -107.2, 'lonja']];
+  const txt = {
+    p88: ['La caja lleva el sello del Carolina y la estrella roja. Dentro, latas de melocotón en almíbar. Nada raro... salvo que pesa el doble de lo que debería.', 'Debajo de las latas, envueltas en paja: botellas de whisky canadiense sin precinto de aduanas.'],
+    p90: ['Otra estrella roja, escondida entre las nasas de los pescadores. Más latas. Y debajo, más whisky.', 'Alguien ha escrito a lápiz en la tapa: «Jueves. Ferraro».'],
+    lonja: ['La tercera caja espera junto a la lonja, entre las cajas de hielo, como si fuera una más.', 'Whisky otra vez. Y un albarán doblado de Transportes Ferraro: «Hielo para la lonja». Hielo, dice.']
+  };
+  const items = spots.map(([x, z, k]) => {
+    const o = new THREE.Group(); o.position.set(x, .15, z); g.add(o);
+    const m = new THREE.MeshStandardMaterial({ map: star, roughness: .9 }); box(1.4, 1.2, 1.4, m, 0, .6, 0, o);
+    const h = haloSprite(0xffe0a0, .9, .4); h.position.set(0, 1.5, 0); o.add(h);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(0, .7, 0); o.add(hit);
+    const it = { o, hit, x, z, k, done: false };
+    inter(hit, { label: 'Abrir la caja de la estrella roja', use: async () => {
+      if (!LIB.act || LIB.act.id !== 'carga' || it.done) return;
+      it.done = true; LIB.act.found++; sfx('paper'); h.visible = false;
+      for (const t of txt[k]) await narr(t);
+      if (LIB.act.found >= 3) await say('Franklin', 'Tres cajas, tres estrellas y un nombre. Esto le va a interesar al capitán.');
+      endDialog(); toast('La carga del Carolina', LIB.act.found >= 3 ? 'Vuelve con el capitán del puerto' : `Caja ${LIB.act.found} de 3`);
+    } });
+    col(x - .75, z - .75, x + .75, z + .75); return it;
+  });
+  libBegin({ id: 'carga', found: 0, tick: () => {
+    const a = LIB.act;
+    if (a.found >= 3) { const c = W.dockCap; if (c) libObj('El capitán del puerto', c.group.position.x, c.group.position.z); return; }
+    const left = items.filter(i => !i.done).sort((a2, b) => Math.hypot(a2.x - P.x, a2.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z));
+    libObj(`Caja con estrella roja (${a.found + 1}/3)`, left[0].x, left[0].z);
+  }, cleanup: () => { items.forEach(i => { g.remove(i.o); W.inters = W.inters.filter(d => d.obj !== i.hit); }); } });
+}
+async function mueWinCarga() {
+  if (!LIB.act || LIB.act.id !== 'carga' || LIB.act.won) return; LIB.act.won = true;
+  S.lock++;
+  try {
+    await say('Franklin', 'Sus tres cajas, capitán. Melocotón por fuera y whisky canadiense por dentro. Y todas con el nombre de Ferraro.');
+    await say('Capitán Halvorsen', 'Ferraro... Lo sabía. Llamaré a Aduanas antes de que amanezca. Y, detective: de esto, ni una palabra en El Ancla.');
+    endDialog(); libWin('carga');
+  } finally { S.lock--; }
+}
+
+/* ---------- El Ancla (interior) ---------- */
+function locAncla(g) {
+  const W2 = 10, D = 12, H = 3.2;
+  room({ x1: -W2 / 2, x2: W2 / 2, z1: -D / 2, z2: D / 2, h: H, wall: M(0xffffff, { map: wallpaper('#1e3036', '#24383e', [4, 1.3]) }), floor: M(0xffffff, { map: woodFloor([4, 6]), roughness: .75 }), ceil: M(0x1e1810), trim: M(0x120c08),
+    wainscot: { h: 1.1, mat: M(0x3a2a1a, { roughness: .6 }) }, gaps: { s: [{ from: -.6, to: .6, bottom: 0, top: 2.3 }] } });
+  const wood = M(0x4a2e18, { roughness: .5 }), brass = M(0xc09a4c, { metalness: .9, roughness: .3 }), rope = M(0x9a8460, { roughness: 1 });
+  // barra con botellas y un timón
+  solid(7, 1.1, .8, wood, -.5, .55, -4.4); box(7.3, .08, 1.0, M(0x2a1608, { roughness: .3 }), -.5, 1.14, -4.4);
+  box(7.4, 2.2, .3, M(0x1e140a), -.5, 2.0, -5.85); [1.4, 2.0].forEach(y => box(6.8, .04, .3, wood, -.5, y, -5.7));
+  const bc = [0x6a3a14, 0x2a5a2a, 0x8a8a7a, 0x3a1a0a, 0xa86a2a];
+  for (let i = 0; i < 26; i++) { const x = -3.6 + (i % 13) * .52, y = [1.43, 2.03][Math.floor(i / 13)]; cyl(.05, .055, .3, new THREE.MeshStandardMaterial({ color: bc[i % 5], roughness: .1, emissive: bc[i % 5], emissiveIntensity: .25 }), x, y + .15, -5.7, null, 8); }
+  const wheel = new THREE.Group(); wheel.position.set(4.9, 2.0, -3.4); wheel.rotation.y = -Math.PI / 2; g.add(wheel);
+  const tor = new THREE.Mesh(new THREE.TorusGeometry(.42, .05, 8, 24), wood); wheel.add(tor); for (let i = 0; i < 8; i++) { const s = cyl(.025, .025, 1.2, wood, 0, 0, 0, wheel, 6); s.rotation.z = i * Math.PI / 8; }
+  for (let x = -3.4; x <= 2.6; x += 1.2) { cyl(.04, .05, .72, wood, x, .36, -3.6, null, 8); cyl(.2, .2, .08, M(0x2a1a0e), x, .76, -3.6, null, 14); }
+  // mesas de barril, redes, farolillos y un ojo de buey que da al río
+  [[-3, 0], [.4, .6], [2.8, -1.4], [-2.2, 3.4], [2.6, 3.2]].forEach(([x, z]) => { cyl(.42, .42, .9, wood, x, .45, z, null, 14); cyl(.48, .48, .05, M(0x2a1a0e), x, .92, z, null, 16); col(x - .45, z - .45, x + .45, z + .45); });
+  const net = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.6, 12, 6), new THREE.MeshBasicMaterial({ color: 0x8a7a5a, wireframe: true })); net.position.set(4.95, 2.3, 0); net.rotation.y = -Math.PI / 2; g.add(net);
+  const lifebuoy = new THREE.Mesh(new THREE.TorusGeometry(.38, .11, 8, 16), M(0xd84a2a, { roughness: .6 })); lifebuoy.position.set(-4.9, 2.1, 1.6); lifebuoy.rotation.y = Math.PI / 2; g.add(lifebuoy);
+  [[-3, 0], [.4, .6], [2.8, -1.4], [-2.2, 3.4], [2.6, 3.2]].forEach(([x, z]) => { const l = new THREE.Group(); l.position.set(x, 2.5, z); g.add(l); box(.2, .3, .2, M(0x2a2a2a, { metalness: .6 }), 0, 0, 0, l); sphere(.08, new THREE.MeshBasicMaterial({ color: 0xffc070 }), 0, 0, 0, l, 8, 6); cyl(.01, .01, .6, rope, 0, .45, 0, l, 4); locLight(x, 2.3, z, 0xffb060, 1.8, 4); });
+  const sea = new THREE.Mesh(new THREE.CircleGeometry(.55, 20), new THREE.MeshBasicMaterial({ map: ctex(128, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1a2230'); gr.addColorStop(.55, '#2a3446'); gr.addColorStop(.56, '#0c141c'); gr.addColorStop(1, '#060a10'); c.fillStyle = gr; c.fillRect(0, 0, w, h); for (let i = 0; i < 14; i++) { c.fillStyle = `rgba(255,${200 + Math.random() * 40},140,${.4 + Math.random() * .5})`; c.fillRect(Math.random() * w, 62 + Math.random() * 6, 3, 2); } }) }));
+  sea.position.set(-4.95, 1.9, -1.6); sea.rotation.y = Math.PI / 2; g.add(sea);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.58, .07, 8, 20), brass); ring.position.copy(sea.position); ring.rotation.y = Math.PI / 2; g.add(ring);
+  inter(sea, { label: 'Mirar por el ojo de buey', use: async () => { await narr('Por el ojo de buey se ve el Hudson, negro como el café de la comisaría, y las luces de Hoboken temblando al otro lado.'); endDialog(); } });
+  const sg = textTex(512, 96, '#1e2e34', (c, w, h) => { c.fillStyle = '#e8c87a'; c.font = '700 54px Georgia'; c.textAlign = 'center'; c.fillText('⚓ EL ANCLA ⚓', w / 2, 66); });
+  plane(2.6, .5, M(0xffffff, { map: sg, emissive: 0x222222, emissiveMap: sg }), -.5, 2.95, -5.68);
+  g.add(new THREE.HemisphereLight(0xffd0a0, 0x2a2018, 1.4)); locLight(-.5, 2.8, -5, 0xffb060, 6, 6); locLight(0, 2.9, 1.5, 0xffc890, 6, 10);
+  // Gus, el tabernero
+  locNPC({ coat: 0xe8e2d4, sleeve: 0xe8e2d4, shirt: 0xe8e2d4, tie: 0x1e2e5a, hat: null, skin: 0xd8a888, face: 'heavy', hair: 0x9a948c }, -.5, -5.2, 0, 'Gus', { label: 'Hablar con Gus, el tabernero', use: async () => {
+    const r = ['En El Ancla no se pregunta de dónde viene nadie. Solo si va a pagar.', 'El sueco de la grúa bebe leche. Leche, detective. Y luego dicen que los raros somos los de Brooklyn.', 'Los de Ferraro vienen los jueves, se sientan en la mesa del fondo y pagan con billetes que huelen a nuevo.', 'Mi padre decía que el Hudson se lo traga todo. Mi madre decía que también lo devuelve. Los dos tenían razón.'];
+    await say('Gus', r[(W._gr = ((W._gr || 0) + 1)) % r.length]); endDialog(); } });
+  // Big Tony y el pulso
+  const tony = locNPC({ coat: 0x5a3a2a, sleeve: 0xd8d2c4, shirt: 0xd8d2c4, hat: 'flat', hatColor: 0x2a2018, skin: 0xb88a6a, face: 'heavy' }, 2.8, -.6, Math.PI, 'Big Tony', { label: 'Echar un pulso con Big Tony', use: mueArm }, 1.12);
+  locNPC({ coat: 0x5a5044, hat: 'flat', hatColor: 0x3a3a3a, skin: 0xd8b09a, face: 'lean' }, -2.2, 2.6, 0, 'Viejo marinero', { label: 'Hablar con el viejo marinero', use: async () => {
+    const r = [['Viejo marinero', 'En el treinta y ocho vi una ballena entrar por la bocana. Nadie me creyó. La ballena tampoco se quedó a explicarlo.'], ['Viejo marinero', 'Si oye la sirena del Carolina de noche, es que alguien ha subido a bordo sin billete. Siempre pasa.']];
+    await say(...r[(W._vm = ((W._vm || 0) + 1)) % r.length]); endDialog(); } });
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(7, 1.2, 1.1), new THREE.MeshBasicMaterial({ visible: false })); bar.position.set(-.5, .6, -4.1); g.add(bar);
+  inter(bar, { label: 'Pedir algo en la barra', use: async () => {
+    const i = await choose(['Un ron de las Antillas', 'Una cerveza', 'Café con un chorrito de algo'], 'El Ancla');
+    await narr(['Gus sirve el ron en un vaso que ha visto mejores siglos. Sabe a melaza, a madera y a una tormenta que todavía no ha llegado.', 'La cerveza está fría y la espuma dura lo que dura una mentira bien contada.', 'El «chorrito» de Gus es generoso. Franklin decide que el café era lo de menos.'][i]); endDialog(); } });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, .3), new THREE.MeshBasicMaterial({ visible: false })); door.position.set(0, 1.2, D / 2 - .1); g.add(door); inter(door, locExit('ancla'));
+  box(1.2, 2.25, .06, M(0x2a1a10), 0, 1.15, D / 2);
+  W.spawn = { x: 0, z: D / 2 - 1.2, yaw: 0, pitch: -.05 };
+}
+async function mueArm() {
+  const D = libData(); let me = 0, him = 0;
+  await say('Big Tony', 'Un poli con ganas de perder. Siéntate, detective. Si ganas, la ronda la pago yo. Si pierdes... también la pago yo, pero me río.');
+  for (let r = 0; r < 3 && me < 2 && him < 2; r++) {
+    const i = await choose(['Empujar con todo<small>Arriesgado: o ganas rápido o te agotas</small>', 'Aguantar y esperar a que se canse', 'Mirarle a los ojos y sonreír'], `El pulso · ronda ${r + 1} · ${me} – ${him}`);
+    const x = Math.random(), win = i === 0 ? x < .42 : i === 1 ? x < (r === 0 ? .25 : .6) : x < .33;
+    if (win) { me++; sfx('good'); await narr(['El brazo de Tony cede un palmo. La taberna entera contiene el aliento.', 'Tony resopla como una locomotora. Su mano toca la madera.', 'Tony parpadea, desconcertado. Lo justo para que su muñeca caiga.'][i]); }
+    else { him++; sfx('bad'); await narr(['Tony ni se inmuta. Es como empujar un muelle de hormigón.', 'Tony espera más que tú. Tiene más paciencia que un pescador.', 'Tony te devuelve la sonrisa. La suya tiene menos dientes y más fuerza.'][i]); }
+  }
+  if (me > him) { D.pulso = (D.pulso || 0) + 1; libSave(); await say('Big Tony', '¡Ja! ¡Me ha ganado un poli! Gus, una ronda para todos y que conste en acta: hoy no se ha visto nada.'); if (typeof unlock === 'function' && D.pulso === 1) try { unlock('pulso'); } catch (e) {} }
+  else await say('Big Tony', 'Buen brazo, para ser de oficina. Vuelve cuando quieras: aquí siempre hay alguien dispuesto a perder.');
+  endDialog();
+}
 
 /* =========================================================
    PASEO LIBRE · encargos por el barrio, piezas del rompecabezas
@@ -3618,7 +4083,8 @@ const MISIONES = [
   { id: 'cuenta', title: 'La cuenta de Doris', giver: "Doris, la camarera del Sam's Diner", clip: ['UN DETECTIVE', 'COBRA UNA CUENTA'] },
   { id: 'partitura', title: 'La partitura perdida', giver: 'Xavi, el contrabajista del Jazz Lantern', clip: ['EL JAZZ LANTERN', 'ESTRENA UN TEMA'] },
   { id: 'bobina', title: 'La tercera bobina', giver: 'El acomodador del cine Rialto', clip: ['EL RIALTO', 'PROYECTA EL FINAL'] },
-  { id: 'apuesta', title: 'Cinco dólares', giver: 'El portero del 1040 de Madison', clip: ['LOS PORTEROS', 'HACEN LAS PACES'] }
+  { id: 'apuesta', title: 'Cinco dólares', giver: 'El portero del 1040 de Madison', clip: ['LOS PORTEROS', 'HACEN LAS PACES'] },
+  { id: 'carga', title: 'La carga del Carolina', giver: 'El capitán del puerto', clip: ['ADUANAS INCAUTA', 'WHISKY EN EL MUELLE'] }
 ];
 // las doce piezas del rompecabezas escondidas por Midtown [x, z, altura del suelo]
 const LIB_PIECES = [[-13.5, -6.7, 0], [-6.7, 12.4, 0], [22.5, 23.7, 0], [-19, -6.8, 0], [-18.35, 18.4, 0], [-9.6, 22.4, 0],
@@ -3995,14 +4461,14 @@ function pisoBoard(cv) {
   for (let i = 0; i < 2600; i++) { c.fillStyle = `rgba(${60 + Math.random() * 60},${40 + Math.random() * 40},20,${Math.random() * .35})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
   c.fillStyle = '#2a1e12'; c.font = '700 30px Georgia'; c.textAlign = 'center'; c.fillText('CASOS DE MIDTOWN', w / 2, 40);
   MISIONES.forEach((m, i) => {
-    const x = 26 + (i % 2) * 304, y = 64 + Math.floor(i / 2) * 150, ok = D.done[m.id];
-    c.save(); c.translate(x + 140, y + 62); c.rotate((i % 2 ? 1 : -1) * .03);
+    const x = 16 + (i % 3) * 204, y = 52 + Math.floor(i / 3) * 124, ok = D.done[m.id];
+    c.save(); c.translate(x + 100, y + 58); c.rotate((i % 2 ? 1 : -1) * .03); c.scale(.68, .8);
     c.fillStyle = ok ? '#e6dcc4' : '#efe4c8'; c.fillRect(-140, -58, 280, 124);
     c.fillStyle = '#1e1a14'; c.textAlign = 'center';
     if (ok) { c.font = '800 24px Georgia'; c.fillText(m.clip[0], 0, -24); c.fillText(m.clip[1], 0, 4); c.fillStyle = 'rgba(30,26,20,.45)'; for (let k = 0; k < 4; k++) c.fillRect(-120, 20 + k * 9, 240 - k * 30, 4); c.fillStyle = '#8a1e14'; c.font = '700 18px Georgia'; c.rotate(-.15); c.strokeStyle = '#8a1e14'; c.lineWidth = 3; c.strokeRect(30, 22, 100, 30); c.fillText('CERRADO', 80, 43); }
     else { c.font = 'italic 22px Georgia'; c.fillText(m.title, 0, -18); c.font = 'italic 16px Georgia'; c.fillStyle = '#5a5244'; c.fillText(m.giver, 0, 12); c.font = '700 34px Georgia'; c.fillStyle = '#8a6a3a'; c.fillText('?', 0, 52); }
     c.restore();
-    c.fillStyle = '#a8261c'; c.beginPath(); c.arc(x + 140, y + 8, 7, 0, 7); c.fill();
+    c.fillStyle = '#a8261c'; c.beginPath(); c.arc(x + 100, y + 14, 6, 0, 7); c.fill();
   });
   c.fillStyle = '#1e1a14'; c.font = 'italic 20px Georgia'; c.textAlign = 'right'; c.fillText(`Piezas del rompecabezas: ${D.pieces.length} / ${LIB_PIECES.length}`, w - 24, h - 16);
 }
@@ -4109,7 +4575,7 @@ const LIBQ = {
   apuesta: { meridian: 'Habla con el portero de The Meridian, en Park Avenue', m1040: 'Vuelve al portero del 1040 de Madison' }
 };
 const LIB_WHERE = { reparto: 'Habla con Jimmy, el de los periódicos, junto al quiosco de la Calle 45', llamada: 'Pasa cerca de la cabina de la Sexta Avenida: tarde o temprano sonará', gato: 'Habla con la señora Kowalski, en el portal del Belmont', sombra: 'Habla con el agente de ronda, en la Calle 45',
-  cuenta: "Habla con Doris, dentro del Sam's Diner", partitura: 'Habla con Xavi, dentro del Jazz Lantern', bobina: 'Habla con el acomodador, dentro del cine Rialto', apuesta: 'Habla con el portero del 1040 de Madison Avenue' };
+  cuenta: "Habla con Doris, dentro del Sam's Diner", partitura: 'Habla con Xavi, dentro del Jazz Lantern', bobina: 'Habla con el acomodador, dentro del cine Rialto', apuesta: 'Habla con el portero del 1040 de Madison Avenue', carga: 'Habla con el capitán del puerto, delante de la Capitanía, en los muelles del Hudson' };
 function libQStart(id, step) { const D = libData(); D.q = { id, step }; libSave(); MINI.base = null; toast('Nuevo encargo', libMis(id).title + ' · ' + LIBQ[id][step]); }
 function libQStep(step) { const D = libData(); if (!D.q) return; D.q.step = step; libSave(); toast(libMis(D.q.id).title, LIBQ[D.q.id][step]); }
 function libQWin(id) { const D = libData(); D.q = null; libSave(); libWin(id); }
@@ -4133,7 +4599,7 @@ function libQObj() {
 function libreBarrio2(g, F) {
   const D = libData();
   const go = (kind) => async () => { if (LIB.act) { await say('Franklin', 'Primero termino lo que tengo entre manos.'); endDialog(); return; } G.freeHour = W.hour; S.lock++; setTimeout(async () => { try { await loadScene('l_' + kind); } catch (e) { console.error(e); } finally { S.lock--; } }, 30); };
-  [["Entrar en Sam's Diner", 'diner'], ["Entrar en O'Malley's", 'pub'], ['Entrar en The Jazz Lantern', 'jazz'], ['Mirar la cartelera del Rialto', 'cine']].forEach(([lb, kind]) => {
+  [["Entrar en Sam's Diner", 'diner'], ["Entrar en O'Malley's", 'pub'], ['Entrar en The Jazz Lantern', 'jazz'], ['Mirar la cartelera del Rialto', 'cine'], ['Entrar en El Ancla', 'ancla']].forEach(([lb, kind]) => {
     const d = W.inters.find(i => i.label === lb); if (!d) return; d.label = LOCALES[kind].door; d.use = go(kind);
   });
   // al salir de un local, apareces en su puerta, mirando a la calle
@@ -4249,7 +4715,8 @@ const LOCALES = {
   diner: { name: "Sam's Diner", sub: 'Calle 45', door: "Entrar en Sam's Diner", mood: 'morning' },
   pub: { name: "O'Malley's", sub: 'Séptima Avenida', door: "Entrar en O'Malley's", mood: 'street' },
   jazz: { name: 'The Jazz Lantern', sub: 'Calle 45', door: 'Entrar en The Jazz Lantern', mood: 'combo' },
-  cine: { name: 'Cine Rialto', sub: 'Quinta Avenida', door: 'Entrar en el cine Rialto', mood: 'night' }
+  cine: { name: 'Cine Rialto', sub: 'Quinta Avenida', door: 'Entrar en el cine Rialto', mood: 'night' },
+  ancla: { name: 'El Ancla', sub: 'Los muelles del Hudson', door: 'Entrar en El Ancla', mood: 'street' }
 };
 function locExit(kind) {
   return { label: 'Salir a la calle', use: async () => { G.spawnAt = LOCALES[kind].door; G.freeHour = W.hour; S.lock++; setTimeout(async () => { try { await loadScene('barrio'); } catch (e) { console.error(e); } finally { S.lock--; } }, 30); } };
@@ -4273,7 +4740,7 @@ function buildLocal(kind) {
   const L = LOCALES[kind];
   newWorld({ mode: 'walk', bg: 0x0a0908, name: 'l_' + kind });
   const g = W.group; W.hour = G.freeHour != null ? G.freeHour : 21; W.local = kind;
-  ({ diner: locDiner, pub: locPub, jazz: locJazz, cine: locCine })[kind](g);
+  ({ diner: locDiner, pub: locPub, jazz: locJazz, cine: locCine, ancla: locAncla })[kind](g);
   W.setup = () => { setLoc(L.name, `${L.sub} · ${todName(W.hour)}`); setHelp(isTouch ? 'Toca lo que te interese · la puerta para salir' : 'E o clic para interactuar · sal por la puerta para volver a la calle'); ambient('hum'); music(L.mood); };
   const u0 = W.update;
   W.update = (dt, t) => { if (u0) u0(dt, t); W.hour = (W.hour + dt / 40) % 24; G.freeHour = W.hour; if (G.coffeeT > 0) G.coffeeT -= dt; (W.anim || []).forEach(f => f(dt, t)); };
@@ -7654,7 +8121,7 @@ async function loadScene(name) {
   S.lock++; saveScene(name);
   if (!fadeEl.classList.contains('on')) await fadeOut();
   $('#card').hidden = true;
-  ({ apt: buildApartment, morgue: () => buildMorgue(), taxi: buildTaxi, office: buildOffice, skyline: buildSkyline, morgue5: () => buildMorgue('sullivan'), taxi5: () => { buildTaxi(); W.onEnter = taxiScene5; }, flat: buildSullivanFlat, club6: () => buildClub('walk'), raid: () => buildClub('raid'), basement: buildBasement, portal: buildPortal, barrio: buildBarrio /*BAR-load*/, piso: buildPiso /*LIB-load*/, l_diner: () => buildLocal('diner'), l_pub: () => buildLocal('pub'), l_jazz: () => buildLocal('jazz'), l_cine: () => buildLocal('cine') /*LOC-load*/ })[name]();
+  ({ apt: buildApartment, morgue: () => buildMorgue(), taxi: buildTaxi, office: buildOffice, skyline: buildSkyline, morgue5: () => buildMorgue('sullivan'), taxi5: () => { buildTaxi(); W.onEnter = taxiScene5; }, flat: buildSullivanFlat, club6: () => buildClub('walk'), raid: () => buildClub('raid'), basement: buildBasement, portal: buildPortal, barrio: buildBarrio /*BAR-load*/, piso: buildPiso /*LIB-load*/, l_diner: () => buildLocal('diner'), l_pub: () => buildLocal('pub'), l_jazz: () => buildLocal('jazz'), l_cine: () => buildLocal('cine') /*LOC-load*/, l_ancla: () => buildLocal('ancla') /*MUE-load*/ })[name]();
   S.scene = name; selfShadow(); /*ENV-self*/
   if (W.spawn) { P.x = W.spawn.x; P.z = W.spawn.z; P.yaw = W.spawn.yaw; P.pitch = W.spawn.pitch; }
   W.look = { yaw: 0, pitch: 0 };
@@ -9557,6 +10024,7 @@ const ACH = [
   { id: 'todo', t: 'A cualquier precio', d: 'En el callejón, elige arriesgarlo todo.' },
   { id: 'enigma', t: 'Baila entre las sombras', d: 'Resuelve el enigma final a la primera.' },
   { id: 'sabueso', t: 'Sabueso', d: 'Atrapa a Mancini tras la persecución por los callejones.' }, /*GUN-ach*/
+  { id: 'pulso', t: 'Brazo de hierro', d: 'Gánale un pulso a Big Tony en El Ancla, en los muelles.' }, /*MUE-ach*/
   { id: 'losabia', t: 'Lo sabía', d: 'Sospecha del Rompecabezas antes de que se quite la máscara.', secret: true },
   { id: 'lector', t: 'Lector de La Crónica', d: 'Lee las cuatro primeras planas del caso.' },
   { id: 'noir', t: 'En blanco y negro', d: 'Juega un capítulo entero en modo noir.' },
