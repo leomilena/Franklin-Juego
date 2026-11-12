@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.3.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.3.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2150,7 +2150,7 @@ function buildBarrio() {
   // ---- colisiones: manzanas, filas exteriores y vallas al final de las avenidas
   BAR.blocks.forEach(([x0, x1, z0, z1], i) => { if (i === 2) { col(-37, 8, -8, 17); col(-37, 23.5, -8, 32); col(-37, 17, -22, 23.5); } else col(x0, z0, x1, z1); });
   col(-95, -200, -8, -48); col(8, -200, 53, -48); col(-200, 48, -8, 200); col(8, 48, 53, 200);
-  col(-95, -200, -53, -8); col(-95, 8, -53, 200); madColliders(); col(138, -260, 260, -8); col(138, 8, 260, 260); col(112, -260, 138, PARK.Z0 - 1);
+  col(-95, -200, -53, -8); col(-95, 8, -53, 200); madColliders(); col(138, -260, 260, -8); col(138, 8, 260, 165); col(112, -260, 138, PARK.Z0 - 1);
   col(-27.8, -48, -24.2, -46.3);                                  // escalinata de la comisaría
   col(-36.4, -45, -31.2, -42.8); col(-21.1, -45, -15.9, -42.8); col(-23.1, -47.4, -22.5, -46.8);   // coches patrulla y agente de la puerta
   const saw = M(0xe8e2d0, { roughness: .7 }), sawR = M(0xb02a1e, { roughness: .7 });
@@ -2238,7 +2238,7 @@ function buildBarrio() {
   const lanes = [barPath('ew', [[-105.6, -215], [-105.6, 2.6], [215, 2.6]], -11.9, 'x', [[PX - PS, 'x', 1], [MAD.X - 11.9, 'x', 2]]), barPath('ew', [[215, -2.6], [-100.4, -2.6], [-100.4, -215]], 11.9, 'x', [[PX + PS, 'x', 1], [MAD.X + 11.9, 'x', 2]]),
     barPath('ns', [[MAD.X - 2.6, -170], [MAD.X - 2.6, 170]], null, 'z', [[-11.9, 'z', 2]]), barPath('ns', [[MAD.X + 2.6, 170], [MAD.X + 2.6, -170]], null, 'z', [[11.9, 'z', 2]]),
     barPath('ns', [[-2.6, -125], [-2.6, 125]], -11.9, 'z'), barPath('ns', [[2.6, 125], [2.6, -125]], 11.9, 'z'),
-    barPath('ns', [[PX + 6.25, PARK.Z1 + 4], [PX + 6.25, PARK.Z0 + 13], [PX + 4, PARK.Z0 + 7], [PX, PARK.Z0 + 5.5], [PX - 4, PARK.Z0 + 7], [PX - 6.25, PARK.Z0 + 13], [PX - 6.25, PARK.Z1 + 4]], null, 'z', [[11.9, 'z', 1], [-11.9, 'z', 1, 6]])];   /*PARK-uturn*/
+    barPath('ns', [[PX + 6.25, PARK.Z1 + 16], [PX + 6.25, PARK.Z0 + 13], [PX + 4, PARK.Z0 + 7], [PX, PARK.Z0 + 5.5], [PX - 4, PARK.Z0 + 7], [PX - 6.25, PARK.Z0 + 13], [PX - 6.25, PARK.Z1 + 16]], null, 'z', [[11.9, 'z', 1], [-11.9, 'z', 1, 6]])];   /*PARK-uturn*/
   W.cars = [];
   const nCars = [8, 12, 16][q];
   for (let i = 0; i < nCars; i++) {
@@ -2508,7 +2508,7 @@ function barrioTick() {
   const txt = `${W.obj.label} · ${d < 4 ? 'aquí' : Math.round(d) + ' m'}${W.obj.extra ? ' · ' + W.obj.extra : ''}`; const sp = el.querySelector('span'); if (sp.textContent !== txt) sp.textContent = txt;
 }
 /* ---------- minimapa y reloj de bolsillo (abajo a la izquierda; en táctil, arriba) ---------- */
-const MINI = { R: 78, base: null, sc: 3, X0: -205, X1: 215, Z0: -210, Z1: 150, min: -1, zoom: .62, icons: [] };
+const MINI = { R: 78, base: null, sc: 3, X0: -205, X1: 215, Z0: -210, Z1: 382, min: -1, zoom: .62, icons: [] };
 function barMiniBase() {
   const cv = document.createElement('canvas'); cv.width = (MINI.X1 - MINI.X0) * MINI.sc; cv.height = (MINI.Z1 - MINI.Z0) * MINI.sc;
   MINI.icons = []; drawBarrioMap(cv, { mini: true, X0: MINI.X0, X1: MINI.X1, Z0: MINI.Z0, Z1: MINI.Z1, sc: MINI.sc, icons: MINI.icons });
@@ -2534,7 +2534,6 @@ function barMiniTick() {
   el.hidden = !on; document.body.classList.toggle('minimap', on && !isTouch);
   if (!on) return;
   const cls = isTouch ? 'tl' : 'bl'; if (el.className !== cls) el.className = cls;
-  { const rg = liIn(P.x, P.z) ? 'li' : 'main'; if (MINI.rg !== rg) { MINI.rg = rg; Object.assign(MINI, rg === 'li' ? { X0: LI.X - 80, X1: LI.X + 80, Z0: LI.Z - 135, Z1: LI.Z + 90 } : { X0: -205, X1: 215, Z0: -210, Z1: 150 }); MINI.base = null; } }
   if (!MINI.base || MINI.world !== W) { barMiniBase(); MINI.world = W; }
   barMiniDraw(el.querySelector('.mm-map'));
   const m = Math.floor((W.hour || 0) * 60); if (m !== MINI.min) { MINI.min = m; barWatchDraw(el.querySelector('.mm-watch'), W.hour || 0); }
@@ -2633,27 +2632,65 @@ function openBarrioMap() {
     el.addEventListener('click', e => { if (e.target === el) closeModal(); });
   }
   el.querySelector('#bmap-k').textContent = GP.on ? 'Select o B · cerrar' : isTouch ? 'Toca fuera para cerrar' : 'M o Esc · cerrar';
-  const mcv = el.querySelector('canvas'); mcv._hl = -1; mcv._region = liIn(P.x, P.z) ? 'li' : mueIn(P.x, P.z) ? 'docks' : 'mid';
-  let tabs = el.querySelector('.bmap-tabs');
-  if (!tabs) {   // dos hojas del plano: Midtown y los muelles del Hudson
-    tabs = document.createElement('div'); tabs.className = 'bmap-tabs'; tabs.setAttribute('role', 'tablist'); tabs.style.cssText = 'display:flex;gap:8px;justify-content:center;margin:0 0 8px';
-    [['mid', 'Midtown'], ['docks', 'Los muelles del Hudson'], ['li', 'Little Italy']].forEach(([k, t]) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.rg = k; b.textContent = t; b.setAttribute('role', 'tab');
-      b.style.cssText = 'font:15px Georgia,serif;padding:6px 16px;border:1px solid #8a7a5a;border-radius:3px;cursor:pointer;color:#2a241c;background:#efe6cc';
-      b.onclick = (e) => { e.stopPropagation(); mcv._region = k; mcv._hl = -1; drawBarrioMap(mcv); syncTabs(); }; tabs.appendChild(b); });
-    mcv.parentNode.insertBefore(tabs, mcv);
+  const mcv = el.querySelector('canvas'); mcv._hl = -1;
+  mcv._view = { x: P.x, z: P.z, s: (mcv._view && mcv._view.s) || 3 }; mapClamp(mcv);
+  let bar = el.querySelector('.bmap-bar');
+  if (!bar) {   // un único plano de todo Manhattan: se mueve con flechas o WASD, arrastrando, y con zoom
+    bar = document.createElement('div'); bar.className = 'bmap-bar'; bar.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:center;margin:0 0 8px;font:14px Georgia,serif;color:#5a5244;flex-wrap:wrap';
+    const btn = (t, lb, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.setAttribute('aria-label', lb); b.title = lb;
+      b.style.cssText = 'font:600 16px Georgia,serif;min-width:40px;min-height:36px;padding:4px 10px;border:1px solid #8a7a5a;border-radius:3px;cursor:pointer;color:#2a241c;background:#efe6cc';
+      b.onclick = (e) => { e.stopPropagation(); fn(); }; bar.appendChild(b); return b; };
+    btn('−', 'Alejar', () => mapZoom(mcv, 1 / 1.3)); btn('+', 'Acercar', () => mapZoom(mcv, 1.3)); btn('⌖ Tú', 'Centrar en Franklin', () => { mcv._view.x = P.x; mcv._view.z = P.z; mapClamp(mcv); drawBarrioMap(mcv); });
+    const hint = document.createElement('span'); hint.className = 'bmap-hint'; hint.style.marginLeft = '8px'; bar.appendChild(hint);
+    mcv.parentNode.insertBefore(bar, mcv); mapPanHook(mcv);
   }
-  const syncTabs = () => { const h = el.querySelector('#bmap-h'); if (h) h.textContent = mcv._region === 'docks' ? 'Manhattan · Los muelles del Hudson' : mcv._region === 'li' ? 'Manhattan · Little Italy' : 'Manhattan · Midtown y Park Avenue'; tabs.querySelectorAll('button').forEach(b => { const on = b.dataset.rg === mcv._region; b.setAttribute('aria-selected', on); b.style.background = on ? '#2a241c' : '#efe6cc'; b.style.color = on ? '#efe6cc' : '#2a241c'; }); };
-  tabs.querySelectorAll('button').forEach(b => { b.onclick = (e) => { e.stopPropagation(); mcv._region = b.dataset.rg; mcv._hl = -1; drawBarrioMap(mcv); syncTabs(); }; });
-  syncTabs(); drawBarrioMap(mcv); mapHook(mcv);
+  bar.querySelector('.bmap-hint').textContent = isTouch ? 'Arrastra para moverte · pellizca para el zoom' : 'Flechas o WASD para moverte · arrastra · rueda o +/− para el zoom · C para centrar';
+  { const h = el.querySelector('#bmap-h'); if (h) h.textContent = 'Manhattan · de los muelles a Little Italy'; }
+  drawBarrioMap(mcv); mapHook(mcv);
   openModal(el, () => {});
   if (!isTouch) setTimeout(() => el.querySelector('#bmap-close').focus({ preventScroll: true }), 30);
+}
+// límites del plano entero y control de la vista
+const MAPW = { X0: -205, X1: 215, Z0: -205, Z1: 380 };
+function mapClamp(cv) {
+  const v = cv._view; v.s = Math.max(1.3, Math.min(7, v.s));
+  const hw = cv.width / 2 / v.s, hh = cv.height / 2 / v.s;
+  v.x = hw * 2 >= MAPW.X1 - MAPW.X0 ? (MAPW.X0 + MAPW.X1) / 2 : Math.max(MAPW.X0 + hw, Math.min(MAPW.X1 - hw, v.x));
+  v.z = hh * 2 >= MAPW.Z1 - MAPW.Z0 ? (MAPW.Z0 + MAPW.Z1) / 2 : Math.max(MAPW.Z0 + hh, Math.min(MAPW.Z1 - hh, v.z));
+}
+function mapZoom(cv, k) { cv._view.s *= k; mapClamp(cv); cv._hl = -1; drawBarrioMap(cv); }
+function mapPanHook(cv) {
+  const keys2 = {}, map = { ArrowUp: [0, -1], KeyW: [0, -1], ArrowDown: [0, 1], KeyS: [0, 1], ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] };
+  const open = () => { const m = document.getElementById('bmap'); return m && !m.hidden; };
+  let raf = 0, last = 0;
+  const loop = (t) => { raf = 0; if (!open()) { for (const k in keys2) delete keys2[k]; return; }
+    const dt = Math.min(.05, last ? (t - last) / 1000 : .016); last = t; let dx = 0, dz = 0; for (const k in keys2) { dx += map[k][0]; dz += map[k][1]; }
+    if (dx || dz) { const sp = 520 / cv._view.s * dt; cv._view.x += dx * sp; cv._view.z += dz * sp; mapClamp(cv); drawBarrioMap(cv); raf = requestAnimationFrame(loop); } else last = 0; };
+  addEventListener('keydown', e => { if (!open()) return;
+    if (map[e.code]) { keys2[e.code] = 1; e.preventDefault(); e.stopPropagation(); if (!raf) raf = requestAnimationFrame(loop); }
+    else if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+') { mapZoom(cv, 1.25); e.preventDefault(); e.stopPropagation(); }
+    else if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-') { mapZoom(cv, 1 / 1.25); e.preventDefault(); e.stopPropagation(); }
+    else if (e.code === 'KeyC') { cv._view.x = P.x; cv._view.z = P.z; mapClamp(cv); drawBarrioMap(cv); e.preventDefault(); e.stopPropagation(); } }, true);
+  addEventListener('keyup', e => { if (map[e.code]) { delete keys2[e.code]; if (open()) { e.preventDefault(); e.stopPropagation(); } } }, true);
+  cv.addEventListener('wheel', e => { e.preventDefault(); mapZoom(cv, e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+  // arrastrar (ratón o dedo) y pellizcar
+  const pts = new Map(); let pinch = 0, moved = 0;
+  const scale = () => cv.width / cv.getBoundingClientRect().width;
+  cv.style.touchAction = 'none';
+  cv.addEventListener('pointerdown', e => { pts.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); } try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+  cv.addEventListener('pointermove', e => { const p0 = pts.get(e.pointerId); if (!p0) return;
+    const k = scale(), dx = (e.clientX - p0[0]) * k, dy = (e.clientY - p0[1]) * k; pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) { cv._view.s *= d / pinch; mapClamp(cv); drawBarrioMap(cv); } pinch = d; return; }
+    moved += Math.abs(dx) + Math.abs(dy); if (moved < 5) return;
+    cv._view.x -= dx / cv._view.s; cv._view.z -= dy / cv._view.s; mapClamp(cv); cv._hl = -1; drawBarrioMap(cv); cv.style.cursor = 'grabbing'; });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; cv.style.cursor = ''; };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
 }
 function drawBarrioMap(cv, o) {
   o = o || {}; const mini = !!o.mini;
   const c = cv.getContext('2d'), Wd = cv.width, Hd = cv.height;
-  const rg = o.region || cv._region || 'mid', dk = !mini && rg === 'docks';
-  const li = !mini && rg === 'li';
-  const X0 = mini ? o.X0 : li ? LI.X - 75 : dk ? -200 : -158, X1 = mini ? o.X1 : li ? LI.X + 75 : dk ? 20 : 200, Z0 = mini ? o.Z0 : li ? LI.Z - 130 : dk ? -196 : -75, Z1 = mini ? o.Z1 : li ? LI.Z + 75 : dk ? 12 : 75, sc = mini ? o.sc : Math.min(Wd / (X1 - X0), Hd / (Z1 - Z0));
+  const dk = !mini, v = cv._view || { x: 20, z: 0, s: 3 };
+  const X0 = mini ? o.X0 : v.x - Wd / 2 / v.s, X1 = mini ? o.X1 : v.x + Wd / 2 / v.s, Z0 = mini ? o.Z0 : v.z - Hd / 2 / v.s, Z1 = mini ? o.Z1 : v.z + Hd / 2 / v.s, sc = mini ? o.sc : v.s;
   const mx = x => (x - X0) * sc + (Wd - (X1 - X0) * sc) / 2, mz = z => (z - Z0) * sc + (Hd - (Z1 - Z0) * sc) / 2;
   if (mini) { const c0 = c.fillText; c.fillText = function () { if (o.text) c0.apply(c, arguments); }; }
   c.fillStyle = '#e6dcc4'; c.fillRect(0, 0, Wd, Hd);
@@ -2667,7 +2704,7 @@ function drawBarrioMap(cv, o) {
   c.fillStyle = '#b8a888'; c.fillRect(mx(PARK.X - 22), mz(PARK.Z1 + 2), 44 * sc, 18 * sc);
   c.fillStyle = '#9fb3bc'; c.fillRect(0, 0, mx(-111), Hd); c.fillStyle = '#b89a70'; c.fillRect(mx(-150), mz(-4), (39) * sc, 8 * sc);
   c.fillStyle = '#7d4a3a'; c.fillRect(mx(-142), mz(-10.9), 15 * sc, 4.6 * sc);
-  c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; c.textAlign = 'center'; c.save(); c.translate(mx(dk ? -185 : -135), mz(dk ? -40 : -30)); c.rotate(-Math.PI / 2); c.fillText('Río Hudson', 0, 0); c.restore();
+  c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; c.textAlign = 'center'; c.save(); c.translate(mx(-135), mz(-30)); c.rotate(-Math.PI / 2); c.fillText('Río Hudson', 0, 0); c.restore();
   barDocksMap(c, mx, mz, sc, { region: dk ? 'docks' : 'mid' }); liMap(c, mx, mz, sc);
   c.fillStyle = '#f2e9d2'; c.fillRect(mx(-22), mz(17), 14 * sc, 6.5 * sc);
   BAR.blocks.forEach(([x0, x1, z0, z1]) => { c.fillStyle = '#c4b590'; c.fillRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); c.strokeStyle = 'rgba(90,80,60,.35)'; c.strokeRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); });
@@ -2769,7 +2806,8 @@ function barrioBackdrop() {
       const a = Math.random() * Math.PI * 2, r = r0 + Math.random() * (r1 - r0), cx = Math.cos(a) * r, cz = Math.sin(a) * r;
       if (ri === 0 && (Math.abs(cx) < 16 || Math.abs(cz) < 16)) continue;          // no tapar el final de las avenidas
       if (cx < -112 && Math.abs(Math.atan2(cz, -cx)) < .62) continue;
-      if (ri < 2 && cx > -240 && cx < -62 && cz < -30 && cz > -300) continue;          // los muelles del Hudson (y su niebla)                // sobre el río no hay torres: se ve la otra orilla
+      if (ri < 2 && cx > -240 && cx < -62 && cz < -30 && cz > -300) continue;          // los muelles del Hudson (y su niebla)
+      if (cx > 25 && cx < 225 && cz > 125 && cz < 420) continue;                         // Little Italy                // sobre el río no hay torres: se ve la otra orilla
       if (cx > 55 && cx < 170 + ri * 20 && cz > -175 && cz < 175) continue;           // Madison, Park Avenue y sus manzanas
       const w = 14 + Math.random() * 26, d = 14 + Math.random() * 22;
       // cada torre en su solar: nada de edificios metidos unos dentro de otros
@@ -3100,7 +3138,7 @@ function barRiver(g, q) {
   for (const [a, b] of [[-44, -8], [8, 130]]) { let x = a; while (b - x > 6) { const w = Math.min(b - x, rnd(16, 24)); shed(x, w); x += w; } }
   // detrás de los almacenes, la ciudad sigue
   // la calle del muelle se acaba (de un lado vallas; del otro, la niebla)
-  col(-700, 4.2, -111, 700);   // al norte, el agua entre los muelles la pone barDocks col(-700, -4.2, -150.2, 4.2);
+  col(-700, 4.2, -111, 700); col(-700, -4.2, -150.2, 4.2);   // al norte, el agua entre los muelles la pone barDocks
   col(-111, -700, -95, -192); col(-111, 46, -95, 700);
   // gente del muelle
   const fisher = makePerson({ coat: 0x3a3a2e, hat: 'flat', hatColor: 0x2e2a22, skin: 0xc8a088, face: 'heavy', seated: true, vary: false });
@@ -3364,8 +3402,8 @@ function madSlabs(slab) {
 }
 function madColliders() {
   MAD.blocks.forEach(([x0, x1, z0, z1]) => col(x0, z0, x1, z1));
-  col(53, -260, 77, -48); col(93, -260, 112, -48); col(53, 48, 77, 260); col(93, 48, 112, 260);
-  col(77, -260, 93, MAD.Z0 - 1); col(77, MAD.Z1 + 1, 93, 260);
+  col(53, -260, 77, -48); col(93, -260, 112, -48); col(53, 48, 77, 165); col(93, 48, 112, 165);
+  col(77, -260, 93, MAD.Z0 - 1); col(77, MAD.Z1 + 1, 93, 165);
 }
 function madSem(g, postM) {
   const s3 = { t: 4, mats: {} }; ['ew', 'ns'].forEach(k => { s3.mats[k] = [0xff2a1a, 0xffb020, 0x40ff70].map(c => new THREE.MeshStandardMaterial({ color: 0x222222, emissive: c, emissiveIntensity: 0 })); });
@@ -3496,7 +3534,9 @@ function parkDoorman(g, f, lx, lz) {
 // el New York Central Building cierra Park Avenue por el sur: la avenida pasa por sus portales
 function parkCentral(g) {
   const z0 = PARK.Z1 + 2, r = (bx) => { bx.raycast = _noRay; return bx; };
-  const mass = building(g, PARK.X, z0 + 9, 44, 18, 32, 1); mass.raycast = _noRay; mass.material.color.setHex(0xcbbd9e);
+  // la mole del edificio, con el hueco de los dos túneles (por dentro siguen hasta Little Italy)
+  [[PARK.X - 15.725, 12.55], [PARK.X + 15.725, 12.55]].forEach(([x, w]) => { const m = building(g, x, z0 + 9, w, 18, 32, 1); m.raycast = _noRay; m.material.color.setHex(0xcbbd9e); });
+  { const m = building(g, PARK.X, z0 + 9, 18.9, 18, 24.4, 1); m.position.y += 7.6; m.raycast = _noRay; m.material.color.setHex(0xcbbd9e); }
   const stoneD = M(0xa8987a, { roughness: .85 }), dark = new THREE.MeshBasicMaterial({ color: 0x07080a });
   r(box(44.8, .9, 18.8, stoneD, PARK.X, 32.2, z0 + 9)); r(box(44.4, 1.2, 1.0, stoneD, PARK.X, 9, z0 - .2));
   // los dos túneles por los que pasa el tráfico y los arcos de peatones
@@ -3518,7 +3558,7 @@ function parkCentral(g) {
   const nm = textTex(1024, 96, '#cbbd9e', (c, w, h) => { c.fillStyle = '#3a2e1e'; c.font = '600 64px "Bodoni Moda", Georgia, serif'; c.textAlign = 'center'; c.fillText('NEW YORK CENTRAL', w / 2, 70); });
   r(plane(20, 1.9, M(0xffffff, { map: nm, roughness: .8 }), PARK.X, 28.6, z0 - .03, Math.PI));
   barRect(PARK.X - 22, z0, PARK.X + 22, z0 + 18);
-  col(PARK.X - 22.5, z0 - .2, PARK.X + 22.5, 260);
+  col(PARK.X - 22.5, z0 - .2, PARK.X - 9.45, z0 + 18); col(PARK.X + 9.45, z0 - .2, PARK.X + 22.5, z0 + 18);   // los dos túneles siguen hasta Little Italy
 }
 // mediana ajardinada con setos, flores y farolas dobles; pasos de peatones a media manzana
 function parkMedian(g, q, zebra) {
@@ -4102,35 +4142,37 @@ async function mueArm() {
    la piazza con la fuente y la iglesia, el Caffè Napoli (se entra) y la trattoria de Mamma Rosa.
    Está lejos del resto del mapa (x ≈ 600): se llega por el túnel, andando o en coche.
    ========================================================= */
-const LI = { X: 600, Z: 0 };
-function liIn(x, z) { return x > LI.X - 90 && x < LI.X + 90 && z > LI.Z - 150 && z < LI.Z + 95; }
+const LI = { X: 125, Z: 265 };   // Mulberry Street sigue a Park Avenue al otro lado del túnel del New York Central
+function liIn(x, z) { return x > LI.X - 85 && x < LI.X + 85 && z > LI.Z - 102 && z < LI.Z + 110; }
 function liFrame(kind) {           // marco de acera como barFrame: origen en el bordillo, +z local hacia la calle, fachada en z local = -3
   const f = new THREE.Group(), X = LI.X, Z = LI.Z;
   if (kind === 'w') { f.position.set(X - 4, 0, 0); f.rotation.y = Math.PI / 2; }        // fachada oeste de Mulberry (mira al este)
   else if (kind === 'e') { f.position.set(X + 4, 0, 0); f.rotation.y = -Math.PI / 2; }  // fachada este (mira al oeste)
   else if (kind === 's') { f.position.set(0, 0, Z - 6); f.rotation.y = Math.PI; }        // acera sur de Grand Street (mira al norte)
   else if (kind === 'gn') { f.position.set(0, 0, Z - 14); f.rotation.y = 0; }             // acera norte de Grand Street (mira al sur)
-  else { f.position.set(0, 0, Z - 111); f.rotation.y = 0; }                              // la iglesia (mira al sur)
+  else if (kind === 'pw') { f.position.set(X - 11, 0, 0); f.rotation.y = Math.PI / 2; }   // lado oeste de la piazza
+  else if (kind === 'pe') { f.position.set(X + 11, 0, 0); f.rotation.y = -Math.PI / 2; }  // lado este de la piazza
+  else { f.position.set(0, 0, Z + 79); f.rotation.y = Math.PI; }                           // la iglesia, al sur (mira al norte)
   W.group.add(f); f.updateMatrixWorld(true); return f;
 }
-const liLX = { w: z => -z, e: z => z, s: x => -x, gn: x => x, n: x => x };   // de coordenada del mundo a x local de cada marco
+const liLX = { w: z => -z, e: z => z, pw: z => -z, pe: z => z, s: x => -x, gn: x => x, n: x => -x };   // de coordenada del mundo a x local de cada marco
 
 function barLittleItaly(g, q) {
   const X = LI.X, Z = LI.Z, r = (m) => { m.raycast = _noRay; return m; };
-  const F = { w: liFrame('w'), e: liFrame('e'), s: liFrame('s'), gn: liFrame('gn'), n: liFrame('n') };
+  const F = { w: liFrame('w'), e: liFrame('e'), pw: liFrame('pw'), pe: liFrame('pe'), s: liFrame('s'), gn: liFrame('gn'), n: liFrame('n') };
   // ---- suelo: adoquines viejos en la calzada, aceras de losas
   const cob = M(0xffffff, { map: ctex(128, 128, (c, w, h) => { c.fillStyle = '#2a2826'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) for (let x = (y / 8) % 2 ? 4 : 0; x < w; x += 8) { const k = 34 + Math.random() * 18; c.fillStyle = `rgb(${k + 6},${k + 3},${k})`; c.fillRect(x + .5, y + .5, 7, 7); } }, [40, 60]), roughness: .45, metalness: .1 });
-  r(plane(140, 230, cob, X, 0, Z - 30, -Math.PI / 2));
+  r(plane(140, 205, cob, X, .002, Z + 7.5, -Math.PI / 2));
   const conc = M(0xffffff, { map: tiles('#5c5a56', '#545250', 4, [1, 1]), roughness: .55, metalness: .1 });
   const slab = (x0, x1, z0, z1) => { const m = conc.clone(); m.map = conc.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.raycast = _noRay; b.castShadow = false; };
   slab(X - 7, X - 4, Z - 3, Z + 56); slab(X + 4, X + 7, Z - 3, Z + 56); slab(X - 7, X - 4, Z - 88, Z - 17); slab(X + 4, X + 7, Z - 88, Z - 17);
   slab(X - 50, X - 7, Z - 6, Z - 3); slab(X + 7, X + 50, Z - 6, Z - 3); slab(X - 50, X - 7, Z - 17, Z - 14); slab(X + 7, X + 50, Z - 17, Z - 14);
-  slab(X - 14, X - 7, Z - 114, Z - 88); slab(X + 7, X + 14, Z - 114, Z - 88); slab(X - 14, X + 14, Z - 114, Z - 111);
+  slab(X - 14, X - 7, Z + 56, Z + 82); slab(X + 7, X + 14, Z + 56, Z + 82); slab(X - 14, X + 14, Z + 79, Z + 82);
   // ---- colisiones (manzanas, final de Grand Street, la piazza y el túnel)
   col(X - 70, Z - 3, X - 7, Z + 56); col(X + 7, Z - 3, X + 70, Z + 56); col(X - 70, Z - 88, X - 7, Z - 17); col(X + 7, Z - 88, X + 70, Z - 17);
   col(X - 70, Z - 17, X - 50, Z - 3); col(X + 50, Z - 17, X + 70, Z - 3);
-  col(X - 70, Z - 140, X - 14, Z - 88); col(X + 14, Z - 140, X + 70, Z - 88); col(X - 70, Z - 160, X + 70, Z - 114);
-  col(X - 70, Z + 56, X - 4.2, Z + 90); col(X + 4.2, Z + 56, X + 70, Z + 90); col(X - 4.2, Z + 61, X + 4.2, Z + 90);
+  col(X - 70, Z + 56, X - 14, Z + 82); col(X + 14, Z + 56, X + 70, Z + 82); col(X - 70, Z + 82, X + 70, Z + 130);   // la piazza (sur)
+  col(X - 70, Z - 100, X - 4.2, Z - 88); col(X + 4.2, Z - 100, X + 70, Z - 88);                                    // el túnel (norte)
   // ---- casas de vecinos: ladrillo, cornisas, escaleras de incendios y tiendas a pie de calle
   const bricks = [0x6a3a2c, 0x7a4a34, 0x5a3a30, 0x8a5a40, 0x6e5040, 0x4e3a34];
   const shopsW = { 40: ['SALUMERIA DI MARCO', 'FORMAGGI · PROSCIUTTI'], 22: ['CAFFÈ NAPOLI', 'ESPRESSO · PASTICCERIA'], 6: ['FARMACIA', null], '-30': ['TABACCHI · GIORNALI', null], '-56': ['CIRCOLO SOCIALE', 'SOLO SOCI'], '-76': ['CALZOLAIO', 'SE ARREGLAN ZAPATOS'] };
@@ -4164,15 +4206,25 @@ function barLittleItaly(g, q) {
   row(F.e, L.e(Z - 3), L.e(Z + 56), shopsE, 13, 19); row(F.e, L.e(Z - 88), L.e(Z - 17), shopsE, 13, 20);
   row(F.s, L.s(X - 19), L.s(X - 50), {}, 12, 17); row(F.s, L.s(X + 50), L.s(X + 19), {}, 12, 17);
   row(F.gn, L.gn(X - 50), L.gn(X - 19), {}, 12, 17); row(F.gn, L.gn(X + 19), L.gn(X + 50), {}, 12, 17);
+  row(F.pw, L.pw(Z + 82), L.pw(Z + 56), {}, 12, 18); row(F.pe, L.pe(Z + 56), L.pe(Z + 82), {}, 12, 18);
   // escaleras de incendios: plataforma, barandilla y tramo inclinado (agrupadas por orientación)
   fire.forEach(([x, y, z, ry]) => { const e = new THREE.Group(); e.position.set(x, y, z); e.rotation.y = ry; g.add(e);
     box(3.2, .07, .9, iron, 0, 0, 0, e); box(3.2, .05, .05, iron, 0, .9, .44, e); [-1.58, 1.58].forEach(xx => box(.05, .9, .9, iron, xx, .45, 0, e));
     const st = box(3.4, .05, .7, iron, .4, -1.5, .1, e); st.rotation.z = .78;
     e.traverse(o => { o.raycast = _noRay; }); });
   // la ciudad sigue detrás de las casas
-  for (let z = Z - 130; z < Z + 75; z += 24) for (const x of [X - 46, X - 28, X + 28, X + 46]) {
+  for (let z = Z - 90; z < Z + 100; z += 24) for (const x of [X - 46, X - 28, X + 28, X + 46]) {
     const w = rnd(14, 18), d = rnd(16, 20); if (!barFree(x - w / 2, z - d / 2, x + w / 2, z + d / 2)) continue;
     const b = building(g, x, z, w, d, rnd(18, 40), Math.floor(Math.random() * 4)); b.raycast = _noRay; b.material.color.setHex(bricks[Math.floor(Math.random() * bricks.length)]);
+  }
+  // Grand Street no da al vacío: al fondo, detrás de las vallas, otra fila de casas cierra la calle
+  [X - 57, X + 57].forEach((x, i) => { const b = building(g, x, Z - 10, 14, 16, rnd(14, 18), i + 1); b.raycast = _noRay; b.material.color.setHex(bricks[i * 3 % bricks.length]); });
+  // el skyline: rascacielos más allá de las casas, hacia el sur y a los lados (al norte ya está el de Midtown)
+  for (let i = 0; i < [16, 22, 28][q]; i++) {
+    const a = -.35 + Math.random() * (Math.PI + .7), rr = rnd(95, 190), x = X + Math.cos(a) * rr * .95, z = Z + 15 + Math.sin(a) * rr;
+    const w = rnd(16, 26), d = rnd(16, 26); if (!barFree(x - w / 2, z - d / 2, x + w / 2, z + d / 2)) continue;
+    const b = building(g, x, z, w, d, rnd(36, 95) * (rr > 150 ? 1.2 : 1), Math.floor(Math.random() * 4)); b.raycast = _noRay;
+    if (Math.random() < .5) b.material.color.setHex([0xb8b0a0, 0x9a948a, 0xc8bca4][i % 3]);
   }
   // ---- la fiesta de San Gennaro: arcos de bombillas sobre Mulberry y ropa tendida
   const bulbs = [], bulbsR = [];
@@ -4191,42 +4243,54 @@ function barLittleItaly(g, q) {
   // ---- farolas
   const lamps = []; for (let z = Z + 50; z > Z - 86; z -= 14) { if (z < Z - 1 && z > Z - 19) continue; lamps.push([X - 4.5, 0, z], [X + 4.5, 0, z + 7]); }
   for (const x of [X - 40, X - 22, X + 22, X + 40]) lamps.push([x, 0, Z - 3.6]);
-  lamps.push([X - 12.4, 0, Z - 92], [X + 12.4, 0, Z - 92], [X - 12.4, 0, Z - 109], [X + 12.4, 0, Z - 109]);
+  lamps.push([X - 12.4, 0, Z + 60], [X + 12.4, 0, Z + 60], [X - 12.4, 0, Z + 77], [X + 12.4, 0, Z + 77]);
   (W.parkLamps = W.parkLamps || []).push(...lamps);
   // ---- la piazza: rotonda con la fuente del santo y la iglesia al fondo
   {
     const stone = M(0xb8b0a0, { roughness: .8 }), stoneD = M(0x8a8478, { roughness: .85 });
-    r(cyl(4.6, 4.8, .3, stoneD, X, .15, Z - 100, null, 32)); r(cyl(3.6, 3.7, .7, stone, X, .5, Z - 100, null, 28));
-    const wm = new THREE.Mesh(new THREE.CircleGeometry(3.4, 28), M(0x0a1016, { roughness: .05, metalness: .8 })); wm.rotation.x = -Math.PI / 2; wm.position.set(X, .82, Z - 100); r(wm); g.add(wm);
-    r(cyl(.4, .6, 2.4, stone, X, 1.8, Z - 100, null, 12)); r(cyl(1.0, .5, .3, stone, X, 3.1, Z - 100, null, 16));
-    const saint = new THREE.Group(); saint.position.set(X, 3.25, Z - 100); g.add(saint);
+    r(cyl(4.6, 4.8, .3, stoneD, X, .15, Z + 68, null, 32)); r(cyl(3.6, 3.7, .7, stone, X, .5, Z + 68, null, 28));
+    const wm = new THREE.Mesh(new THREE.CircleGeometry(3.4, 28), M(0x0a1016, { roughness: .05, metalness: .8 })); wm.rotation.x = -Math.PI / 2; wm.position.set(X, .82, Z + 68); r(wm); g.add(wm);
+    r(cyl(.4, .6, 2.4, stone, X, 1.8, Z + 68, null, 12)); r(cyl(1.0, .5, .3, stone, X, 3.1, Z + 68, null, 16));
+    const saint = new THREE.Group(); saint.position.set(X, 3.25, Z + 68); saint.rotation.y = Math.PI; g.add(saint);
     cyl(.32, .42, 1.5, stone, 0, .75, 0, saint, 10); sphere(.2, stone, 0, 1.68, 0, saint, 10, 8); cyl(.24, .18, .14, stone, 0, 1.9, 0, saint, 10);
     const arm = cyl(.07, .07, .7, stone, .26, 1.3, .1, saint, 6); arm.rotation.z = -1; saint.traverse(o => { o.raycast = _noRay; });
-    col(X - 4.4, Z - 104.4, X + 4.4, Z - 95.6);
-    W.liFount = puffs(g, 8, { size: .25, rise: .8, alpha: .12, dur: 1.4, drift: .2, color: 0xb8c8d8 }); W.liFount.origin.set(X, 3.4, Z - 100); W.liFount.on = true;
+    col(X - 4.4, Z + 63.6, X + 4.4, Z + 72.4);
+    W.liFount = puffs(g, 8, { size: .25, rise: .8, alpha: .12, dur: 1.4, drift: .2, color: 0xb8c8d8 }); W.liFount.origin.set(X, 3.4, Z + 68); W.liFount.on = true;
     // la iglesia
     const ch = M(0xd8ccb0, { map: tiles('#d8ccb0', '#cfc2a4', 4, [4, 4]), roughness: .85 });
-    r(box(22, 18, 10, ch, X, 9, Z - 119)); r(box(23, .8, 10.6, stoneD, X, 18.2, Z - 119));
+    r(box(22, 18, 10, ch, X, 9, Z + 87)); r(box(23, .8, 10.6, stoneD, X, 18.2, Z + 87));
     const tri = new THREE.Shape(); tri.moveTo(-11.5, 0); tri.lineTo(11.5, 0); tri.lineTo(0, 6); tri.closePath();
-    const ped = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 1, bevelEnabled: false }), ch); ped.position.set(X, 18.6, Z - 115); r(ped); g.add(ped);
-    r(box(5, 26, 5, ch, X + 13.5, 13, Z - 120)); const tr = new THREE.Mesh(new THREE.ConeGeometry(3.6, 6, 4), M(0x5a6a5a, { roughness: .6, metalness: .3 })); tr.rotation.y = Math.PI / 4; tr.position.set(X + 13.5, 29, Z - 120); r(tr); g.add(tr);
+    const ped = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 1, bevelEnabled: false }), ch); ped.position.set(X, 18.6, Z + 81); r(ped); g.add(ped);
+    r(box(5, 26, 5, ch, X - 13.5, 13, Z + 88)); const tr = new THREE.Mesh(new THREE.ConeGeometry(3.6, 6, 4), M(0x5a6a5a, { roughness: .6, metalness: .3 })); tr.rotation.y = Math.PI / 4; tr.position.set(X - 13.5, 29, Z + 88); r(tr); g.add(tr);
     const rose = new THREE.Mesh(new THREE.CircleGeometry(2, 24), new THREE.MeshStandardMaterial({ color: 0x3a1a2a, emissive: 0xffa060, emissiveIntensity: .8, map: ctex(128, 128, (c, w, h) => { c.fillStyle = '#5a2a4a'; c.fillRect(0, 0, w, h); for (let i = 0; i < 12; i++) { c.strokeStyle = ['#e8c050', '#3a6aa8', '#a8261c'][i % 3]; c.lineWidth = 7; c.beginPath(); c.moveTo(64, 64); c.lineTo(64 + Math.cos(i / 12 * 6.283) * 64, 64 + Math.sin(i / 12 * 6.283) * 64); c.stroke(); } }) }));
-    (W.winMats = W.winMats || []).push([rose.material, .8]); rose.position.set(X, 12.5, Z - 113.97); r(rose); g.add(rose);
-    r(plane(3.2, 5.2, M(0x2a1a10, { roughness: .7 }), X, 2.75, Z - 113.97, 0, 0));
-    const arcD = new THREE.Mesh(new THREE.CircleGeometry(1.6, 16, 0, Math.PI), M(0x2a1a10)); arcD.position.set(X, 5.35, Z - 113.97); r(arcD); g.add(arcD);
-    for (let i = 0; i < 3; i++) r(box(10 - i * 1.2, .2, 1, stoneD, X, .25 + i * .2, Z - 113.3 + (2 - i) * .55));
-    r(plane(8, .8, new THREE.MeshBasicMaterial({ map: barSign('CHIESA DI SAN GENNARO', null, 8, .8, '#d8ccb0', '#3a2e1e', '700 90px Georgia, serif') }), X, 9.4, Z - 113.96, 0, 0));
-    barDoor(F.n, X, 3, { label: 'Entrar en la iglesia de San Gennaro', use: async () => { await narr(W.hour > 7 && W.hour < 20 ? 'Dentro huele a cera y a incienso. Una anciana reza el rosario en italiano, muy deprisa, como si tuviera prisa por llegar al final.' : 'La puerta está cerrada. Junto al picaporte, alguien ha dejado un ramito de flores y una vela que ya se ha apagado.'); endDialog(); } });
+    (W.winMats = W.winMats || []).push([rose.material, .8]); rose.position.set(X, 12.5, Z + 81.97); rose.rotation.y = Math.PI; r(rose); g.add(rose);
+    r(plane(3.2, 5.2, M(0x2a1a10, { roughness: .7 }), X, 2.75, Z + 81.97, 0, Math.PI));
+    const arcD = new THREE.Mesh(new THREE.CircleGeometry(1.6, 16, 0, Math.PI), M(0x2a1a10)); arcD.position.set(X, 5.35, Z + 81.97); arcD.rotation.y = Math.PI; r(arcD); g.add(arcD);
+    for (let i = 0; i < 3; i++) r(box(10 - i * 1.2, .2, 1, stoneD, X, .25 + i * .2, Z + 81.3 - (2 - i) * .55));
+    r(plane(8, .8, new THREE.MeshBasicMaterial({ map: barSign('CHIESA DI SAN GENNARO', null, 8, .8, '#d8ccb0', '#3a2e1e', '700 90px Georgia, serif') }), X, 9.4, Z + 81.96, 0, Math.PI));
+    barDoor(F.n, L.n(X), 3, { label: 'Entrar en la iglesia de San Gennaro', use: async () => { await narr(W.hour > 7 && W.hour < 20 ? 'Dentro huele a cera y a incienso. Una anciana reza el rosario en italiano, muy deprisa, como si tuviera prisa por llegar al final.' : 'La puerta está cerrada. Junto al picaporte, alguien ha dejado un ramito de flores y una vela que ya se ha apagado.'); endDialog(); } });
   }
-  // ---- el túnel de vuelta a Park Avenue (al sur de Mulberry)
+  // ---- el túnel de Park Avenue: la boca norte de Mulberry Street y el pasadizo hasta el New York Central
   {
     const stone = M(0xcbbd9e, { roughness: .85 }), stoneD = M(0xa8987a, { roughness: .85 }), dark = new THREE.MeshBasicMaterial({ color: 0x07080a });
-    r(box(30, 14, 12, stone, X, 7, Z + 62)); r(box(30.6, .8, 12.6, stoneD, X, 14.2, Z + 62));
-    r(plane(8, 6.4, dark, X, 3.2, Z + 55.97, 0, Math.PI)); const arc = new THREE.Mesh(new THREE.CircleGeometry(4, 20, 0, Math.PI), dark); arc.position.set(X, 6.4, Z + 55.97); arc.rotation.y = Math.PI; r(arc); g.add(arc);
-    r(plane(8, 6.4, dark, X, 3.2, Z + 55.97, 0, 0)); const arc2 = arc.clone(); arc2.rotation.y = 0; g.add(arc2);
-    r(box(9, .5, .5, stoneD, X, 10.8, Z + 55.8));
-    r(plane(9, 1.1, new THREE.MeshBasicMaterial({ map: barSign('TÚNEL DE PARK AVENUE', '↑ MIDTOWN · NEW YORK CENTRAL', 9, 1.1, '#cbbd9e', '#3a2e1e', '700 90px Georgia, serif') }), X, 12.4, Z + 55.95, 0, 0));
-    const tl = new THREE.PointLight(0xffd8a0, 0, 12, 2); tl.position.set(X, 5, Z + 57.5); g.add(tl); W.liTunL = tl;
+    r(box(10.8, 14, 12, stone, X - 9.6, 7, Z - 94)); r(box(10.8, 14, 12, stone, X + 9.6, 7, Z - 94)); r(box(8.4, 6.4, 12, stone, X, 10.8, Z - 94)); r(box(30.6, .8, 12.6, stoneD, X, 14.2, Z - 94));
+    const arc = new THREE.Mesh(new THREE.CircleGeometry(4.2, 20, 0, Math.PI), dark); arc.position.set(X, 6.4, Z - 87.97); r(arc); g.add(arc);
+    r(box(9.2, .5, .5, stoneD, X, 10.9, Z - 87.8));
+    r(plane(9, 1.1, new THREE.MeshBasicMaterial({ map: barSign('TÚNEL DE PARK AVENUE', '↑ MIDTOWN · NEW YORK CENTRAL', 9, 1.1, '#cbbd9e', '#3a2e1e', '700 90px Georgia, serif') }), X, 12.4, Z - 87.95, 0, 0));
+    // el pasadizo (paredes, techo y luces), desde el New York Central (z = PARK.Z1 + 2) hasta la boca de Mulberry
+    const zA = PARK.Z1 + 2, zB = zA + 18, zC = Z - 100, zD = Z - 88, H = 7.6;
+    const wallM = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: ctex(64, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#5a5248'); gr.addColorStop(.25, '#3e3832'); gr.addColorStop(1, '#1e1b18'); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 8; y < h; y += 16) c.fillRect(0, y, w, 2); c.fillRect(0, 0, 2, h); }, [8, 1]) }), ceilM = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 1, side: THREE.DoubleSide });
+    const wall = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), m = plane(L, H, wallM, (x0 + x1) / 2, H / 2, (z0 + z1) / 2, 0, Math.atan2(-(z1 - z0), x1 - x0)); m.raycast = _noRay; m.receiveShadow = m.castShadow = false; };
+    [-1, 1].forEach(sd => { wall(X + sd * 9.45, zA - .1, X + sd * 9.45, zB); wall(X + sd * 9.45, zB, X + sd * 4.2, zC); wall(X + sd * 4.2, zC, X + sd * 4.2, zD); });
+    { const pl = box(6.1, H, zB - zA, M(0x4a443c, { roughness: .9 }), X, H / 2, (zA + zB) / 2); pl.raycast = _noRay; pl.receiveShadow = pl.castShadow = false; }                                    // el pilar entre los dos carriles
+    const ceil = plane(20, zD - zA, ceilM, X, H, (zA + zD) / 2, Math.PI / 2); ceil.raycast = _noRay; ceil.receiveShadow = ceil.castShadow = false;
+    const strip = new THREE.MeshBasicMaterial({ color: 0xffe2b0 }), strips = [];
+    for (let z = zA + 3; z < zD - 1; z += 5) { const w = z < zB ? [-6.25, 6.25] : [0]; w.forEach(x => strips.push([X + x, H - .08, z])); }
+    barInst(new THREE.BoxGeometry(1.6, .08, .4), strip, strips);
+    const glowM = new THREE.MeshBasicMaterial({ color: 0xffd8a0, transparent: true, opacity: .22, depthWrite: false, map: ctex(64, 64, (c, w, h) => { const gr = c.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, h); }) });
+    strips.forEach(([x, , z]) => { const gl = plane(3.4, 3.4, glowM, x, .03, z, -Math.PI / 2); gl.raycast = _noRay; });
+    col(X - 3.05, zA - .3, X + 3.05, zB);
+    for (let z = zB; z < zC; z += .5) { const w = 9.45 - (z + .25 - zB) / (zC - zB) * 5.25; col(X - 40, z, X - w, z + .5); col(X + w, z, X + 40, z + .5); }
   }
   // ---- carritos, coches aparcados y la gente del barrio
   {
@@ -4250,10 +4314,10 @@ function barLittleItaly(g, q) {
   W.liBarber = person({ coat: 0xe8e2d4, sleeve: 0xe8e2d4, shirt: 0xe8e2d4, tie: 0x1a1a1a, hat: null, skin: 0xd8b09a, face: 'lean', hair: 0x1a1410 }, X + 5.4, Z + 41, -Math.PI / 2, 'Gennaro, el barbero', 'Hablar con Gennaro, el barbero', [
     [['Gennaro, el barbero', '¿Un afeitado, detective? Navaja de Solingen y toalla caliente. Sale de aquí con diez años menos y dos secretos más.']],
     [['Gennaro, el barbero', 'En mi silla se ha sentado medio Ayuntamiento. Todos hablan. Ninguno se da cuenta de que el barbero escucha.']]]);
-  W.liPriest = person({ coat: 0x111114, longCoat: true, hat: null, skin: 0xe0bca4, face: 'heavy', hair: 0xb8b4ac, tie: 0x111114, shirt: 0x111114 }, X - 2.4, Z - 111.6, 0, 'Padre Tommaso', 'Hablar con el padre Tommaso', [
+  W.liPriest = person({ coat: 0x111114, longCoat: true, hat: null, skin: 0xe0bca4, face: 'heavy', hair: 0xb8b4ac, tie: 0x111114, shirt: 0x111114 }, X - 2.4, Z + 79.4, Math.PI, 'Padre Tommaso', 'Hablar con el padre Tommaso', [
     [['Padre Tommaso', 'Bienvenido a San Gennaro, hijo. Aquí no preguntamos a qué se dedica la gente. Bastante tiene Dios con saberlo.']],
     [['Padre Tommaso', 'En septiembre sacamos al santo en procesión por Mulberry. Le cuelgan billetes del manto. Algunos, de gente que no se atrevería a entrar en la iglesia.']]]);
-  person({ coat: 0x3a3a2e, hat: 'flat', hatColor: 0x2a2620, skin: 0xc8a088, face: 'heavy', seated: false }, X + 9.5, Z - 98, -Math.PI / 2 - .4, 'Acordeonista', 'Escuchar al acordeonista', [
+  person({ coat: 0x3a3a2e, hat: 'flat', hatColor: 0x2a2620, skin: 0xc8a088, face: 'heavy', seated: false }, X + 9.5, Z + 66, -Math.PI / 2 + .4, 'Acordeonista', 'Escuchar al acordeonista', [
     [['Acordeonista', '«Torna a Surriento»... ¿La conoce? Mi madre la cantaba tendiendo la ropa. Una moneda y se la toco entera.']]]);
   // Mamma Rosa, delante de su trattoria (y su encargo)
   const rosa = makePerson({ coat: 0x2a2a2e, hairStyle: 'bob', hair: 0x9a948c, wcoat: 0x3a2a2e, skin: 0xe0bca4, face: 'round', vary: false });
@@ -4281,54 +4345,38 @@ function barLittleItalyPeds(g, q) {
     W.peds.push({ p, R, per, s: per * i / 5 + Math.random() * 10, dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .3, ph: Math.random() * 6, col: colR });
   }
 }
-// el túnel: cruzarlo (andando o en coche) lleva de Park Avenue a Little Italy y al revés
 function liTick(dt, t) {
   if (W.liFount) W.liFount.update(dt);
-  if (W.liTunL) W.liTunL.intensity = (W.lampK || 0) > .3 ? 2.5 : .8;
-  if (W._tun || W.mode !== 'walk' || locked() || CINE.on || S.paused) return;
-  const drv = !!W.drive;
-  if (P.z > PARK.Z1 - 3.2 && Math.abs(P.x - PARK.X) < 9.8 && P.x < 300) liTunnel(true);
-  else if (liIn(P.x, P.z) && P.z > LI.Z + 52.5 && Math.abs(P.x - LI.X) < 4.4) liTunnel(false);
-}
-async function liTunnel(toLI) {
-  W._tun = true; S.lock++;
-  try {
-    const d = W.drive, k = W.pcar;
-    if (d) d.v = Math.min(d.v, 8);
-    await fadeOut();
-    sfx('step'); if (A.ctx) { const c = A.ctx.currentTime; tone(70, c, 1.6, 'sawtooth', .02); }
-    const x = toLI ? LI.X + 2 : PARK.X + 6.25, z = toLI ? LI.Z + 42 : PARK.Z1 - 12;
-    if (d && k) { k.position.set(x, 0, z); k.rotation.y = Math.PI / 2; d.ch = Math.PI / 2; P.x = x; P.z = z; if (typeof carSave === 'function') carSave(); }
-    else { P.x = toLI ? LI.X + 1.5 : PARK.X + PARK.HW + 1.6; P.z = z; P.yaw = 0; P.pitch = -.03; }
-    MINI.base = null;
-    await wait(700);
-    fadeIn();
-    toast(toLI ? 'Little Italy' : 'Park Avenue', toLI ? 'Mulberry Street · al otro lado del túnel' : 'De vuelta en Midtown');
-    if (toLI && !W._liSeen) { W._liSeen = true; caps([[1200, 'Little Italy olía a ajo, a café y a pan recién hecho. Las bombillas de la fiesta de San Gennaro seguían colgadas de lado a lado de Mulberry Street.', 5600]]).catch(() => {}); }
-  } finally { S.lock--; setTimeout(() => { W._tun = false; }, 600); }
+  const inL = liIn(P.x, P.z) && P.z > LI.Z - 86;
+  if (inL && !W._liIn && W.mode === 'walk' && !CINE.on) {
+    toast('Little Italy', 'Mulberry Street');
+    if (!W._liSeen) { W._liSeen = true; caps([[600, 'Al salir del túnel, Little Italy olía a ajo, a café y a pan recién hecho. Las bombillas de la fiesta de San Gennaro seguían colgadas de lado a lado de Mulberry Street.', 5600]]).catch(() => {}); }
+  }
+  W._liIn = inL;
 }
 // plano: la hoja de Little Italy
 function liMap(c, mx, mz, sc) {
   const X = LI.X, Z = LI.Z;
-  c.fillStyle = '#c4b590'; c.fillRect(mx(X - 70), mz(Z - 140), 140 * sc, 230 * sc);
+  c.fillStyle = '#c4b590'; c.fillRect(mx(X - 70), mz(Z - 100), 140 * sc, 230 * sc);
+  c.fillStyle = '#e4dbc2'; c.fillRect(mx(X - 8), mz(PARK.Z1), 16 * sc, (Z - 88 - PARK.Z1) * sc);          // el túnel
   c.fillStyle = '#f2e9d2';
-  c.fillRect(mx(X - 7), mz(Z - 88), 14 * sc, 144 * sc); c.fillRect(mx(X - 50), mz(Z - 17), 100 * sc, 14 * sc); c.fillRect(mx(X - 14), mz(Z - 114), 28 * sc, 26 * sc);
-  c.fillStyle = '#b8b0a0'; c.beginPath(); c.arc(mx(X), mz(Z - 100), 4.6 * sc, 0, 7); c.fill();
-  c.fillStyle = '#d8ccb0'; c.fillRect(mx(X - 11), mz(Z - 124), 22 * sc, 10 * sc);
-  c.fillStyle = '#b8a888'; c.fillRect(mx(X - 15), mz(Z + 56), 30 * sc, 12 * sc);
+  c.fillRect(mx(X - 7), mz(Z - 88), 14 * sc, 144 * sc); c.fillRect(mx(X - 50), mz(Z - 17), 100 * sc, 14 * sc); c.fillRect(mx(X - 14), mz(Z + 56), 28 * sc, 26 * sc);
+  c.fillStyle = '#b8b0a0'; c.beginPath(); c.arc(mx(X), mz(Z + 68), 4.6 * sc, 0, 7); c.fill();
+  c.fillStyle = '#d8ccb0'; c.fillRect(mx(X - 11), mz(Z + 82), 22 * sc, 10 * sc);
   c.strokeStyle = 'rgba(160,40,30,.55)'; c.setLineDash([3, 4]); c.lineWidth = 2; [Z + 44, Z + 30, Z + 16, Z - 26, Z - 44, Z - 62, Z - 78].forEach(z => { c.beginPath(); c.moveTo(mx(X - 6.4), mz(z)); c.lineTo(mx(X + 6.4), mz(z)); c.stroke(); }); c.setLineDash([]);
   c.fillStyle = '#8a1e14'; [X - 49.5, X + 49.5].forEach(x => c.fillRect(mx(x) - 2, mz(Z - 16), 4, 12 * sc));
   c.fillStyle = '#5a5244'; c.font = '13px "Special Elite",monospace'; c.textAlign = 'center';
   c.save(); c.translate(mx(X) + 4, mz(Z + 30)); c.rotate(-Math.PI / 2); c.fillText('MULBERRY STREET', 0, 0); c.restore();
   c.fillText('GRAND STREET', mx(X - 30), mz(Z - 10) + 4);
+  c.fillStyle = '#7a6e58'; c.font = 'italic 13px Georgia'; c.fillText('túnel', mx(X) + 26, mz((PARK.Z1 + Z - 88) / 2) + 4);
+  c.fillStyle = '#4a2e1e'; c.font = 'italic 22px Georgia'; c.fillText('Little Italy', mx(X + 42), mz(Z + 40));
 }
 function liPins(pin) {
   const X = LI.X, Z = LI.Z;
   pin(X - 7.5, Z + 22, 'Caffè Napoli', '#5a3a2a', '☕');
   pin(X + 7.5, Z + 10, 'Trattoria Mamma Rosa', '#7a2a1a', '♨');
-  pin(X, Z - 116, 'Iglesia de San Gennaro', '#5a4a6a', '✝');
-  pin(X, Z + 58, 'Túnel a Park Avenue', '#3a3a3a', '⇡');
-  pin(PARK.X, PARK.Z1 + 1, 'Túnel a Little Italy', '#3a3a3a', '⇣');
+  pin(X, Z + 84, 'Iglesia de San Gennaro', '#5a4a6a', '✝');
+  pin(X + 11, (PARK.Z1 + Z - 88) / 2, 'Túnel de Park Avenue', '#3a3a3a', '⇕');
   if (G.free) { const D = libData(); if (!D.done.cannoli) pin(X + 6.4, Z + 13, 'Encargo: Mamma Rosa', '#b08a3a', '!'); }
 }
 
@@ -5805,7 +5853,8 @@ function carSetup(g) {
   carEngine(false); carHud(false);
   // en la historia, el coche no está hasta el capítulo V (antes Franklin va a pie y en taxi)
   if (typeof G.hub === 'number' && G.hub < 5) { W.pcar = null; return; }
-  const D = libData(); let s = D.car || CAR.home;
+  const D = libData(); if (D.car && (D.car.x > 260 || D.car.x < -260 || D.car.z > 390)) D.car = null;   // coches guardados donde ya no hay calle (Little Italy se movió en la v2.3.1)
+  let s = D.car || CAR.home;
   const root = new THREE.Group(), body = makeCar(0x1d3b2c); root.add(body); root.userData.keep = true;
   // detalles: luces traseras, matrícula, figura del capó, embellecedores blancos
   const red = new THREE.MeshStandardMaterial({ color: 0x5a0c08, emissive: 0xff2a10, emissiveIntensity: .25 });
@@ -5874,7 +5923,13 @@ function carDrive(dt) {
   const nh = h0 + v / 2.7 * Math.tan(d.steer) * dt, [fx, fz] = carFwd(nh), nx = x0 + fx * v * dt, nz = z0 + fz * v * dt;
   const ign = new Set(carHits(x0, z0, h0));
   let x = x0, z = z0, h = h0, hit = false;
+  let slid = null;
+  if (carHits(nx, nz, nh, ign).length && Math.abs(v) > .4) {   // pared en diagonal (embudo del túnel): resbalar de lado en vez de frenar en seco
+    const d0 = Math.abs(v) * dt;
+    for (const m of [.75, 1.8, 3.2]) { for (const sg of [1, -1]) { const o = d0 * m, sx = nx + fz * o * sg, sz = nz - fx * o * sg; if (!carHits(sx, sz, nh, ign).length) { slid = [sx, sz]; break; } } if (slid) break; }
+  }
   if (!carHits(nx, nz, nh, ign).length) { x = nx; z = nz; h = nh; }
+  else if (slid) { x = slid[0]; z = slid[1]; h = nh; v *= .985; if (Math.abs(v) > 9) { carThud(Math.abs(v) * .3); v *= .93; } }
   else if (!carHits(nx, z0, nh, ign).length) { x = nx; h = nh; v *= .97; hit = Math.abs(fz) > .5; }
   else if (!carHits(x0, nz, nh, ign).length) { z = nz; h = nh; v *= .97; hit = Math.abs(fx) > .5; }
   else { if (!carHits(x0, z0, nh, ign).length) h = nh; hit = true; }
