@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.6.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.6.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -1849,7 +1849,7 @@ function haloSprite(color, size, op) {
 // reflejo: plano tumbado que nace en el pie de la luz y siempre apunta hacia la cámara
 function wetStreak(parent, local, color, len, w, op) {
   const geo = new THREE.PlaneGeometry(w, 1, 1, 1); geo.rotateX(-Math.PI / 2); geo.translate(0, 0, .5);
-  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: streakTex(), color, transparent: true, opacity: op, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -2 }));
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: streakTex(), color, transparent: true, opacity: op, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -.4, polygonOffsetUnits: -2 }));
   m.position.copy(local); m.raycast = () => {}; m.renderOrder = 2; m.userData.len = len; parent.add(m);
   (W.wet = W.wet || []).push(m); return m;
 }
@@ -1888,7 +1888,7 @@ function wetScene(o) {
   // charcos: superficies casi espejo que recogen los brillos de las farolas
   if (o.puddles) {
     const [x0, x1, z0, z1] = o.puddles, n = o.nPuddles || 18;
-    const pm = new THREE.MeshStandardMaterial({ color: 0x06080b, roughness: .03, metalness: .85, alphaMap: puddleTex(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 });
+    const pm = new THREE.MeshStandardMaterial({ color: 0x06080b, roughness: .03, metalness: .85, alphaMap: puddleTex(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -.4, polygonOffsetUnits: -2 });
     for (let i = 0; i < n; i++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), pm); p.rotation.x = -Math.PI / 2; p.rotation.z = rnd(0, 3); p.scale.set(rnd(1.2, 3.4), rnd(.8, 2), 1); p.position.set(rnd(x0, x1), gy * .5, rnd(z0, z1)); p.receiveShadow = true; p.raycast = () => {}; g.add(p); }
   }
 }
@@ -2091,12 +2091,12 @@ function buildBarrio() {
   slab(-95, -53, -8, -5); slab(-95, -53, 5, 8); slab(138, 228, -8, -5); slab(138, 228, 5, 8); madSlabs(slab);
   slab(112, 115, PARK.Z0 - 40, -45); slab(112, 115, -35, -5); slab(112, 115, 5, 35); slab(112, 115, 45, PARK.Z1); slab(135, 138, PARK.Z0 - 40, -5); slab(135, 138, 5, PARK.Z1);
   // líneas de la calzada y pasos de cebra
-  const dash = new THREE.MeshBasicMaterial({ map: ctex(32, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(220,210,170,.55)'; c.fillRect(12, 0, 8, 64); }), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const dash = new THREE.MeshBasicMaterial({ map: ctex(32, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(220,210,170,.55)'; c.fillRect(12, 0, 8, 64); }), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -.4, polygonOffsetUnits: -2 });
   const line = (x0, x1, z0, z1) => { const L = Math.max(x1 - x0, z1 - z0), along = x1 - x0 > z1 - z0; const m = dash.clone(); m.map = dash.map.clone(); m.map.wrapS = m.map.wrapT = THREE.RepeatWrapping; m.map.repeat.set(1, L / 6); m.map.needsUpdate = true;
     const p = plane(.35, L, m, (x0 + x1) / 2, .006, (z0 + z1) / 2); p.rotation.set(-Math.PI / 2, along ? Math.PI / 2 : 0, 0, 'YXZ'); p.raycast = _noRay; };
   [[-98, -8], [8, 108], [142, 228]].forEach(([a, b]) => line(a, b, 0, 0)); line(MAD.X, MAD.X, MAD.Z0, -8); line(MAD.X, MAD.X, 8, MAD.Z1); line(57, 108, -40, -40); line(57, 108, 40, 40); line(-103, -103, -130, -8); line(-103, -103, 8, 248); [[-120, -8], [8, 248]].forEach(([a, b]) => line(0, 0, a, b));
   [[-53, -8], [8, 53]].forEach(([a, b]) => { line(a, b, -40, -40); line(a, b, 40, 40); }); [[-48, -8], [8, 48]].forEach(([a, b]) => { line(-45, -45, a, b); line(45, 45, a, b); });
-  const zebra = new THREE.MeshBasicMaterial({ map: ctex(128, 32, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(225,220,200,.6)'; for (let x = 4; x < w; x += 16) c.fillRect(x, 0, 9, h); }), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const zebra = new THREE.MeshBasicMaterial({ map: ctex(128, 32, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(225,220,200,.6)'; for (let x = 4; x < w; x += 16) c.fillRect(x, 0, 9, h); }), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -.4, polygonOffsetUnits: -2 });
   const cross = (x, z, rot) => { const p = plane(9.4, 2.4, zebra, x, .007, z); p.rotation.set(-Math.PI / 2, rot, 0, 'YXZ'); p.raycast = _noRay; };
   // pasos de cebra solo donde hay calzada a los dos lados (nada de cebras debajo de las aceras)
   const avOn = (X, z) => X === 0 || Math.abs(z) < 40;                     // la Séptima y la Quinta acaban en las calles 46 y 44
@@ -3614,7 +3614,7 @@ function parkUturn(g) {
   const X = PARK.X, z = PARK.Z0 + 10;
   const arrow = new THREE.MeshBasicMaterial({ map: ctex(256, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = 'rgba(232,224,200,.75)'; c.lineWidth = 22; c.lineCap = 'round';
     c.beginPath(); c.moveTo(196, 236); c.lineTo(196, 110); c.arc(128, 110, 68, 0, Math.PI, true); c.lineTo(60, 170); c.stroke(); c.fillStyle = 'rgba(232,224,200,.75)'; c.beginPath(); c.moveTo(60, 236); c.lineTo(22, 160); c.lineTo(98, 160); c.closePath(); c.fill(); }),
-    transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -.4, polygonOffsetUnits: -2 });
   const p = plane(6, 6, arrow, X + 6.2, .008, PARK.Z0 + 30, -Math.PI / 2); p.raycast = _noRay;
   const sg = new THREE.Group(); sg.position.set(X, 0, PARK.Z0 + 21.6); g.add(sg);
   cyl(.06, .06, 2.6, M(0x1d2420, { metalness: .5 }), 0, 1.3, 0, sg, 8);
@@ -3746,7 +3746,7 @@ function barDocks(g, q) {
   plane(66.4, 50, M(0xffffff, { map: ctex(256, 256, (c, w, h) => { c.fillStyle = '#25282d'; c.fillRect(0, 0, w, h); speckle(c, w, h, 3500, .4); }, [10, 8]), roughness: .28, metalness: .22 }), -78.4, 0, -195, -Math.PI / 2).raycast = _noRay;
   slab(-111, -108, ZN, -130); slab(-98, -95, ZN, -130);
   box(1.2, 1.4, -130 - ZN, M(0x55524c, { roughness: .9 }), -111.6, -.55, zMid).raycast = _noRay;
-  { const dash = new THREE.MeshBasicMaterial({ map: ctex(32, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(220,210,170,.55)'; c.fillRect(12, 0, 8, 64); }, [1, (-130 - ZN) / 6]), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  { const dash = new THREE.MeshBasicMaterial({ map: ctex(32, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(220,210,170,.55)'; c.fillRect(12, 0, 8, 64); }, [1, (-130 - ZN) / 6]), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -.4, polygonOffsetUnits: -2 });
     const p = plane(.35, -130 - ZN, dash, -103, .006, zMid, -Math.PI / 2); p.raycast = _noRay; }
   // ---- los muelles sobre el río
   const pierM = M(0xffffff, { map: tiles('#5e5c56', '#56544e', 4, [1, 1]), roughness: .6, metalness: .05 });
@@ -6596,20 +6596,57 @@ const RIDE = {
   loop: [[118.75, -2.6], [2.6, -2.6], [2.6, -38.6], [118.75, -38.6], [118.75, -2.6]],
   to: { comisaria: { door: 'Volver a la comisaría', path: [[24, -41.4], [-23.4, -41.4]] }, jazz: { door: 'Entrar en The Jazz Lantern', path: [[8, -2.6], [-21.4, -2.6]] } }
 };
-function ridePath() { let pts = RIDE.start.slice(); for (let i = 0; i < 6; i++) pts = pts.concat(RIDE.loop.slice(1)); return barPath('ns', pts, null, 'z'); }
+// curvas redondeadas: cada esquina se sustituye por un arco (como gira un coche de verdad)
+function rideSmooth(pts, r) {
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const A = out[out.length - 1], B = pts[i], C = pts[i + 1];
+    const ab = [B[0] - A[0], B[1] - A[1]], bc = [C[0] - B[0], C[1] - B[1]], lab = Math.hypot(ab[0], ab[1]), lbc = Math.hypot(bc[0], bc[1]);
+    if (lab < .05 || lbc < .05) continue;
+    const u1 = [ab[0] / lab, ab[1] / lab], u2 = [bc[0] / lbc, bc[1] / lbc];
+    if (u1[0] * u2[0] + u1[1] * u2[1] > .995) { out.push(B); continue; }
+    const rr = Math.min(r, lab * .48, lbc * .48), P1 = [B[0] - u1[0] * rr, B[1] - u1[1] * rr], P2 = [B[0] + u2[0] * rr, B[1] + u2[1] * rr];
+    for (let k = 0; k <= 10; k++) { const t = k / 10, a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t; out.push([a * P1[0] + b * B[0] + c * P2[0], a * P1[1] + b * B[1] + c * P2[1]]); }
+  }
+  out.push(pts[pts.length - 1]); return out;
+}
+function rideSetRaw(R, raw) { R.raw = raw; R.ri = 0; R.L = barPath('ns', rideSmooth(raw, 9), null, 'z'); R.s = 0; }
+function rideRawStart() { let pts = RIDE.start.slice(); for (let i = 0; i < 8; i++) pts = pts.concat(RIDE.loop.slice(1)); return pts; }
+// a mitad de la conversación: «llévame allí». Sigue por las calles hasta el desvío y frena en la puerta (sin cortes)
+function rideHeadTo(R, to) {
+  const raw = R.raw, q = R.ride.position, ex = to === 'jazz' ? [2.6, -2.6] : [2.6, -38.6];
+  // en qué tramo va el coche (el más cercano, mirando un poco hacia delante)
+  let best = R.ri, bd = 1e9;
+  for (let i = R.ri; i < Math.min(raw.length - 1, R.ri + 4); i++) { const A = raw[i], B = raw[i + 1], abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((q.x - A[0]) * abx + (q.z - A[1]) * abz) / L2)), d = Math.hypot(A[0] + abx * t - q.x, A[1] + abz * t - q.z); if (d < bd) { bd = d; best = i; } }
+  // si está en plena curva, espera a salir de ella
+  const nxt = raw[best + 1]; if (nxt && Math.hypot(nxt[0] - q.x, nxt[1] - q.z) < 11) return false;
+  let j = best + 1; while (j < raw.length && !(Math.abs(raw[j][0] - ex[0]) < .1 && Math.abs(raw[j][1] - ex[1]) < .1)) j++;
+  if (j >= raw.length) return false;
+  const pts = [[q.x, q.z]].concat(raw.slice(best + 1, j));
+  if (to === 'jazz') pts.push([2.6, -2.6], [-21.4, -2.6]); else pts.push([2.6, -41.4], [-23.4, -41.4]);
+  rideSetRaw(R, pts); R.stopAt = R.L.len; R.heading = true; return true;
+}
 function rideDrive(R, dt, vmax) {
-  const L = R.L; if (R.s >= L.len - .05) { R.v = 0; return true; }
+  const L = R.L;
+  // el tramo del recorrido en bruto por el que va (para saber dónde desviarse)
+  if (R.raw && R.ri < R.raw.length - 2) { const B = R.raw[R.ri + 1], q = R.ride.position; if (Math.hypot(B[0] - q.x, B[1] - q.z) < 4) R.ri++; }
   let vt = vmax;
-  for (const cs of L.corners) { const d = cs - R.s; if (d > -3 && d < 14) vt = Math.min(vt, 3.4 + Math.max(0, d) * .45); }
-  const at = barPathAt(L, R.s);
-  for (const c of W.cars || []) { const q = c.c.position, dx = q.x - at.x, dz = q.z - at.z, ah = dx * at.dx + dz * at.dz, lat = Math.abs(dx * at.dz - dz * at.dx); if (ah > 0 && ah < 14 && lat < 2) vt = Math.min(vt, Math.max(0, (ah - 6.5) * .8)); }
-  if (R.stopAt != null) { const d = R.stopAt - R.s; vt = Math.min(vt, Math.max(0, d * .9)); }
-  R.v += (vt - R.v) * Math.min(1, dt * (vt < R.v ? 2.6 : .9)); R.s = Math.min(L.len, R.s + R.v * dt);
-  const p = barPathAt(L, R.s), want = Math.atan2(-p.dx, -p.dz); let d = want - R.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); R.yaw += d * Math.min(1, dt * 3.2);
-  R.ride.position.set(p.x, Math.sin(performance.now() / 110) * .006, p.z); R.ride.rotation.y = R.yaw;
+  // curvas: frena según lo que gira la calle en los próximos metros
+  const a0 = barPathAt(L, R.s), a1 = barPathAt(L, Math.min(L.len, R.s + 11)), cs = Math.max(-1, Math.min(1, a0.dx * a1.dx + a0.dz * a1.dz)), ang = Math.acos(cs);
+  vt = Math.min(vt, vmax - (vmax - 3.2) * Math.min(1, ang / 1.25));
+  for (const c of W.cars || []) { const q = c.c.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx); if (ah > 0 && ah < 15 && lat < 2) vt = Math.min(vt, Math.max(0, (ah - 6.5) * .8)); }
+  if (R.stopAt != null) { const d = R.stopAt - R.s; vt = Math.min(vt, Math.max(0, Math.sqrt(Math.max(0, d) * 2.2) - .15)); }
+  // acelera y frena con suavidad
+  const acc = vt > R.v ? 2.2 : 4.5; R.v += Math.max(-acc * dt, Math.min(acc * dt, vt - R.v)); if (R.v < 0) R.v = 0;
+  R.s = Math.min(L.len, R.s + R.v * dt);
+  const p = barPathAt(L, R.s), pa = barPathAt(L, Math.min(L.len, R.s + 2.6)), dx = pa.x - p.x, dz = pa.z - p.z;
+  const want = Math.hypot(dx, dz) > .05 ? Math.atan2(-dx, -dz) : Math.atan2(-p.dx, -p.dz); let d = want - R.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+  const yr = d * Math.min(1, dt * 5); R.yaw += yr;
+  R.roll = (R.roll || 0) + ((dt > 0 ? -yr / dt * R.v * .006 : 0) - (R.roll || 0)) * Math.min(1, dt * 3); R.pitch = (R.pitch || 0) + ((R.lastV != null && dt > 0 ? (R.lastV - R.v) / dt * .004 : 0) - (R.pitch || 0)) * Math.min(1, dt * 3); R.lastV = R.v;
+  R.ride.position.set(p.x, Math.sin(performance.now() / 110) * .005 * Math.min(1, R.v / 4), p.z); R.ride.rotation.order = 'YXZ'; R.ride.rotation.set(Math.max(-.035, Math.min(.035, R.pitch)), R.yaw, Math.max(-.045, Math.min(.045, R.roll)));
   R.shell.userData.wheels && R.shell.userData.wheels.forEach(w => w.rotation.y += R.v * dt * 2.7);
   P.x = p.x; P.z = p.z;
-  return R.stopAt != null && R.v < .05 && R.stopAt - R.s < .4;
+  return R.stopAt != null && R.v < .05 && R.stopAt - R.s < .6;
 }
 // cámara: asiento de atrás (dentro) o una toma de fuera
 function rideInside(R, on) {
@@ -6626,11 +6663,11 @@ async function taxiRide(o) {
     if (typeof LIB !== 'undefined') { LIB.ringT = -1e9; if (LIB.act) libClear(); } if (typeof CRIME !== 'undefined') CRIME.t = 1e9;
     if (W.pcar) W.pcar.visible = W.pcar.position.distanceTo(V3(133.6, 0, 33.5)) > 6;
     W.hubTick = null; W.storyObj = null; W.obj = null;
-    const T = rideTaxi(), R = { ride: T.ride, shell: T.shell, car: T.car, L: ridePath(), s: 0, v: 0, yaw: 0, stopAt: null };
+    const T = rideTaxi(), R = { ride: T.ride, shell: T.shell, car: T.car, s: 0, v: 0, yaw: 0, stopAt: null }; rideSetRaw(R, rideRawStart());
     { const p = barPathAt(R.L, 0); R.yaw = Math.atan2(-p.dx, -p.dz); R.ride.position.set(p.x, 0, p.z); R.ride.rotation.y = R.yaw; }
     arrClearPeds((x, z) => Math.hypot(x - 136, z - 30) < 20);
     P.x = 134; P.z = 30; if (W.cull) { W.cull.t = 0; barCullTick(0); }
-    const u0 = W.update; let drive = false; W.update = (dt, t) => { if (u0) u0(dt, t); if (drive && !S.paused) { rideDrive(R, dt, 9); if (R.inside) rideCam(R); } if (W.eyes) W.eyes.opacity += ((W.eyesOn ? 1 : 0) - W.eyes.opacity) * Math.min(1, dt * 4); };
+    const u0 = W.update; let drive = false; W.update = (dt, t) => { if (u0) u0(dt, t); if (drive && !S.paused) { if (R.wantHome && !R.heading) rideHeadTo(R, o.to); rideDrive(R, Math.min(dt, .05), R.heading ? 10 : 9); if (R.inside) rideCam(R); } if (W.eyes) W.eyes.opacity += ((W.eyesOn ? 1 : 0) - W.eyes.opacity) * Math.min(1, dt * 4); };
     // 1 · Franklin sale del instituto forense y sube al taxi
     const ds = storyDoorSpawn('Entrar en el instituto forense', 0), fr = makePerson({ franklin: true }); W.group.add(fr.group); fr.gaze = false; fr.group.traverse(q => { if (q.isMesh) q.frustumCulled = false; });
     const d0 = ds ? [ds.p.x + ds.n.x * .4, ds.p.z + ds.n.z * .4] : [138, 30], doorP = [134.75, 33.9];
@@ -6647,14 +6684,15 @@ async function taxiRide(o) {
     drive = true; rideInside(R, true); renderer.shadowMap.needsUpdate = true;
     ambient('taxi'); setLoc('Calles de Nueva York', 'El taxi de Elliot Wade');
     await wait(900);
+    const dest = RIDE.to[o.to];
+    // la conversación decide cuándo ir al sitio (W.rideHome()); si no lo dice, al acabar
+    W.rideHome = () => { R.wantHome = true; };
     await o.talk();
-    // 3 · la conversación ha terminado: el taxi va al sitio (un corte, como en las películas)
-    const dest = RIDE.to[o.to]; endDialog();
-    await fadeOut(); drive = false;
-    R.L = barPath('ns', dest.path, null, 'z'); R.s = 0; R.v = 7; R.stopAt = R.L.len; { const p = barPathAt(R.L, 0); R.yaw = Math.atan2(-p.dx, -p.dz); }
-    rideDrive(R, 0, 0); rideCam(R); drive = true; fadeIn();
-    await new Promise(res => { const id = setInterval(() => { if (R.v < .05 && R.stopAt - R.s < .5) { clearInterval(id); res(); } }, 100); setTimeout(() => { clearInterval(id); if (R.stopAt - R.s > .5) { const q = barPathAt(R.L, R.stopAt); R.s = R.stopAt; R.v = 0; R.yaw = Math.atan2(-q.dx, -q.dz); R.ride.position.set(q.x, 0, q.z); R.ride.rotation.y = R.yaw; P.x = q.x; P.z = q.z; rideCam(R); } res(); }, 16000); });
-    drive = false;
+    R.wantHome = true; endDialog();
+    // si todavía no ha llegado, el taxi sigue hasta la puerta (sin cortes); y si llega antes, espera con el motor en marcha
+    await new Promise(res => { const t0 = performance.now(); const id = setInterval(() => { if ((R.heading && R.v < .05 && R.stopAt - R.s < .6) || performance.now() - t0 > 90000) { clearInterval(id); res(); } }, 100); });
+    if (!(R.heading && R.stopAt - R.s < .6)) { rideHeadTo(R, o.to); const q = barPathAt(R.L, R.L.len); R.s = R.L.len; R.v = 0; R.yaw = Math.atan2(-q.dx, -q.dz); R.ride.position.set(q.x, 0, q.z); R.ride.rotation.y = R.yaw; rideCam(R); }
+    drive = false; W.rideHome = null;
     if (o.atStop) await o.atStop();
     endDialog();
     // 4 · fuera: Franklin baja y entra por la puerta
@@ -6694,6 +6732,7 @@ async function taxiRideCh4() {
       S.people.add('elliot');
       await say('Franklin', '¿Qué sabes sobre el caso del asesinato del alcalde?');
       await say('Elliot Wade', 'Mmmm... lo que dicen en la radio. Otro político que pagaba por sus propias mentiras. Pero seguro que tú tienes una versión más interesante, Franklin.');
+      if (W.rideHome) W.rideHome();   // Elliot ya enfila hacia la comisaría
       i = await choose(['Tu curiosidad no tiene límites, ¿verdad?', 'No hablo de mis casos con desconocidos.']);
       await say('Franklin', i === 0 ? 'Tu curiosidad no tiene límites, ¿verdad?' : 'No hablo de mis casos con desconocidos.');
       await say('Elliot Wade', 'En Nueva York no puedes permitirte vivir sin saber qué pasa. Pero te diré una cosa: creo que este asesinato tiene más profundidad de la que crees. O eso pienso yo.');
@@ -6721,6 +6760,7 @@ async function taxiRideCh5() {
   await taxiRide({ to: 'jazz', hour: hr, sub: 'Esa misma tarde', title: ['Park Avenue', 'Esa misma tarde'],
     c1: [[300, 'Inmediatamente, Franklin se dirigió hacia el club: salió del instituto forense y tomó un taxi.', 4400], [200, 'La casualidad quiso que el conductor fuera Elliot.', 3200]],
     talk: async () => {
+      if (W.rideHome) W.rideHome();
       W.eyesOn = true;
       await say('Elliot Wade', '¡Detective! Qué casualidad volver a encontrarnos. ¿Adónde quiere ir?');
       await narr('Elliot sonríe en el retrovisor. Una sonrisa disimulada.');
