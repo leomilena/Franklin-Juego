@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.6.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.6.2 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2411,8 +2411,11 @@ function barTraffic(dt, t) {
     const at = barPathAt(L, c.s); let blocked = false;
     // coches de otros recorridos justo delante (cruces y tramos compartidos)
     for (const o of cars) if (o !== c && o.ln !== L) { const q = o.c.position, dx = q.x - at.x, dz = q.z - at.z, ah = dx * at.dx + dz * at.dz, lat = Math.abs(dx * at.dz - dz * at.dx); if (ah > 0 && ah < 14 && lat < 1.8) vt = Math.min(vt, Math.max(0, (ah - 6) * .8)); }
-    if (!(P.fy > 1)) { const px = P.x - at.x, pz = P.z - at.z, ahead = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx), dr = !!W.drive;
-      if (lat < (dr ? 2.4 : 1.9) && ahead > 0 && ahead < 16) { vt = Math.min(vt, Math.max(0, (ahead - (dr ? 5.2 : 4.2)) * 1.1)); blocked = ahead < 9; } }
+    if (!(P.fy > 1)) { const px = P.x - at.x, pz = P.z - at.z, ahead = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx), dr = !!W.drive || !!W.riding;
+      if (W.riding && W.ridePath) for (const q of W.ridePath) { const fx = q.x - at.x, fz = q.z - at.z, a2 = fx * at.dx + fz * at.dz, l2 = Math.abs(fx * at.dz - fz * at.dx); if (l2 < 2.7 && a2 > 3.8 && a2 < 24 && Math.abs(q.dx * at.dx + q.dz * at.dz) < .7) vt = Math.min(vt, Math.max(0, (a2 - 5) * 1.1)); }   // el taxi de la historia: le ceden el paso en los cruces
+      if (lat < (W.riding && W.rideOut ? 3.3 : dr ? 2.6 : 1.9) && ahead > -1.5 && ahead < 16) { vt = Math.min(vt, Math.max(0, (ahead - (dr ? 5.6 : 4.2)) * 1.1)); blocked = ahead < 9; }
+      // (el taxi de la historia es el que cede el paso: ver rideDrive)
+      }
     if (W.pcar && !W.drive) { const q = W.pcar.position, px = q.x - at.x, pz = q.z - at.z, ahead = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx);   /*CAR-traffic*/
       if (lat < 2.4 && ahead > 0 && ahead < 16) { vt = Math.min(vt, Math.max(0, (ahead - 5.2) * 1.1)); if (c.v < .3) W.pcarJam = (W.pcarJam || 0) + dt; } }
     c.v += (vt - c.v) * Math.min(1, dt * (vt < c.v ? 3 : 1.2)); if (c.v < .05) c.v = 0;
@@ -6610,21 +6613,20 @@ function rideSmooth(pts, r) {
   }
   out.push(pts[pts.length - 1]); return out;
 }
-function rideSetRaw(R, raw) { R.raw = raw; R.ri = 0; R.L = barPath('ns', rideSmooth(raw, 9), null, 'z'); R.s = 0; }
+// radio 5,5: suave, pero sin subirse a la acera en las esquinas (ni llevarse al agente de ronda de la Sexta)
+function rideSetRaw(R, raw) { R.raw = raw; R.ri = 0; R.L = barPath('ns', rideSmooth(raw, 5.5), null, 'z'); R.s = 0; }
 function rideRawStart() { let pts = RIDE.start.slice(); for (let i = 0; i < 8; i++) pts = pts.concat(RIDE.loop.slice(1)); return pts; }
 // a mitad de la conversación: «llévame allí». Sigue por las calles hasta el desvío y frena en la puerta (sin cortes)
 function rideHeadTo(R, to) {
-  const raw = R.raw, q = R.ride.position, ex = to === 'jazz' ? [2.6, -2.6] : [2.6, -38.6];
-  // en qué tramo va el coche (el más cercano, mirando un poco hacia delante)
-  let best = R.ri, bd = 1e9;
-  for (let i = R.ri; i < Math.min(raw.length - 1, R.ri + 4); i++) { const A = raw[i], B = raw[i + 1], abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((q.x - A[0]) * abx + (q.z - A[1]) * abz) / L2)), d = Math.hypot(A[0] + abx * t - q.x, A[1] + abz * t - q.z); if (d < bd) { bd = d; best = i; } }
-  // si está en plena curva, espera a salir de ella
-  const nxt = raw[best + 1]; if (nxt && Math.hypot(nxt[0] - q.x, nxt[1] - q.z) < 11) return false;
-  let j = best + 1; while (j < raw.length && !(Math.abs(raw[j][0] - ex[0]) < .1 && Math.abs(raw[j][1] - ex[1]) < .1)) j++;
-  if (j >= raw.length) return false;
-  const pts = [[q.x, q.z]].concat(raw.slice(best + 1, j));
-  if (to === 'jazz') pts.push([2.6, -2.6], [-21.4, -2.6]); else pts.push([2.6, -41.4], [-23.4, -41.4]);
-  rideSetRaw(R, pts); R.stopAt = R.L.len; R.heading = true; return true;
+  const raw = R.raw, ex = to === 'jazz' ? [2.6, -2.6] : [2.6, -38.6], app = to === 'jazz' ? [[-21.4, -2.6]] : [[2.6, -41.4], [-23.4, -41.4]];
+  // la primera vez que el recorrido pasa por el desvío, con margen para no cambiar la curva que ya está tomando
+  for (let j = R.ri + 1; j < raw.length; j++) {
+    if (!(Math.abs(raw[j][0] - ex[0]) < .1 && Math.abs(raw[j][1] - ex[1]) < .1)) continue;
+    const q = R.ride.position; let d = Math.hypot(raw[R.ri + 1][0] - q.x, raw[R.ri + 1][1] - q.z); for (let k = R.ri + 1; k < j; k++) d += Math.hypot(raw[k + 1][0] - raw[k][0], raw[k + 1][1] - raw[k][1]);
+    if (d < 14) continue;
+    const s0 = R.s, ri = R.ri; rideSetRaw(R, raw.slice(0, j + 1).concat(app)); R.s = s0; R.ri = ri; R.stopAt = R.L.len; R.heading = true; return true;
+  }
+  return false;
 }
 function rideDrive(R, dt, vmax) {
   const L = R.L;
@@ -6634,7 +6636,16 @@ function rideDrive(R, dt, vmax) {
   // curvas: frena según lo que gira la calle en los próximos metros
   const a0 = barPathAt(L, R.s), a1 = barPathAt(L, Math.min(L.len, R.s + 11)), cs = Math.max(-1, Math.min(1, a0.dx * a1.dx + a0.dz * a1.dz)), ang = Math.acos(cs);
   vt = Math.min(vt, vmax - (vmax - 3.2) * Math.min(1, ang / 1.25));
-  for (const c of W.cars || []) { const q = c.c.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx); if (ah > 0 && ah < 15 && lat < 2) vt = Math.min(vt, Math.max(0, (ah - 6.5) * .8)); }
+  // el resto del tráfico: los de delante (mismo carril) y los que cruzan por delante en las intersecciones
+  // (los que cruzan ven venir al taxi y le ceden el paso: ver barTraffic)
+  let cross = false;
+  for (const c of W.cars || []) { const q = c.c.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx);
+    const cd = barPathAt(c.ln, c.s), same = cd.dx * a0.dx + cd.dz * a0.dz > .5;
+    if (same && ah > 0 && ah < 28 && lat < 2.4) vt = Math.min(vt, Math.sqrt(Math.max(0, ah - 6.8) * 2 * 3.2) + c.v * .8);
+    if (same && ah > -16 && ah < 3 && lat > 1.1 && lat < 3.9 && c.v > .3) vt = 0;   // al incorporarse (salir del bordillo, girar a otra calle), deja pasar a los que vienen por detrás
+    else if (!same && W.ridePath) { for (let k = 0; k < W.ridePath.length; k++) { const fp = W.ridePath[k]; if (Math.hypot(fp.x - q.x, fp.z - q.z) < 3.4) { vt = Math.min(vt, Math.sqrt(Math.max(0, k * 2 - 4.2) * 2 * 3.2)); cross = true; break; } } } }   // los que cruzan le ven venir y esperan (barTraffic)
+  // la gente que cruza la calzada por delante
+  for (const o of W.peds || []) { const q = o.p.group.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx); if (ah > 0 && ah < 9 && lat < 1.6) vt = Math.min(vt, Math.max(0, (ah - 3.4) * .8)); }
   if (R.stopAt != null) { const d = R.stopAt - R.s; vt = Math.min(vt, Math.max(0, Math.sqrt(Math.max(0, d) * 2.2) - .15)); }
   // acelera y frena con suavidad
   const acc = vt > R.v ? 2.2 : 4.5; R.v += Math.max(-acc * dt, Math.min(acc * dt, vt - R.v)); if (R.v < 0) R.v = 0;
@@ -6645,7 +6656,8 @@ function rideDrive(R, dt, vmax) {
   R.roll = (R.roll || 0) + ((dt > 0 ? -yr / dt * R.v * .006 : 0) - (R.roll || 0)) * Math.min(1, dt * 3); R.pitch = (R.pitch || 0) + ((R.lastV != null && dt > 0 ? (R.lastV - R.v) / dt * .004 : 0) - (R.pitch || 0)) * Math.min(1, dt * 3); R.lastV = R.v;
   R.ride.position.set(p.x, Math.sin(performance.now() / 110) * .005 * Math.min(1, R.v / 4), p.z); R.ride.rotation.order = 'YXZ'; R.ride.rotation.set(Math.max(-.035, Math.min(.035, R.pitch)), R.yaw, Math.max(-.045, Math.min(.045, R.roll)));
   R.shell.userData.wheels && R.shell.userData.wheels.forEach(w => w.rotation.y += R.v * dt * 2.7);
-  P.x = p.x; P.z = p.z;
+  W.rideOut = R.s > 10; { const fp = []; for (let d = 0; d <= Math.max(14, R.v * 2.6 + 7); d += 2) fp.push(barPathAt(L, Math.min(L.len, R.s + d))); W.ridePath = fp; }
+  P.x = p.x; P.z = p.z; W.rideVel = [-Math.sin(R.yaw) * R.v, -Math.cos(R.yaw) * R.v];
   return R.stopAt != null && R.v < .05 && R.stopAt - R.s < .6;
 }
 // cámara: asiento de atrás (dentro) o una toma de fuera
@@ -6667,6 +6679,7 @@ async function taxiRide(o) {
     { const p = barPathAt(R.L, 0); R.yaw = Math.atan2(-p.dx, -p.dz); R.ride.position.set(p.x, 0, p.z); R.ride.rotation.y = R.yaw; }
     arrClearPeds((x, z) => Math.hypot(x - 136, z - 30) < 20);
     P.x = 134; P.z = 30; if (W.cull) { W.cull.t = 0; barCullTick(0); }
+    W.riding = true;
     const u0 = W.update; let drive = false; W.update = (dt, t) => { if (u0) u0(dt, t); if (drive && !S.paused) { if (R.wantHome && !R.heading) rideHeadTo(R, o.to); rideDrive(R, Math.min(dt, .05), R.heading ? 10 : 9); if (R.inside) rideCam(R); } if (W.eyes) W.eyes.opacity += ((W.eyesOn ? 1 : 0) - W.eyes.opacity) * Math.min(1, dt * 4); };
     // 1 · Franklin sale del instituto forense y sube al taxi
     const ds = storyDoorSpawn('Entrar en el instituto forense', 0), fr = makePerson({ franklin: true }); W.group.add(fr.group); fr.gaze = false; fr.group.traverse(q => { if (q.isMesh) q.frustumCulled = false; });
@@ -6713,7 +6726,7 @@ async function taxiRide(o) {
       await fadeOut();
     });
     W.update = u0;
-  } finally { S.lock--; }
+  } finally { W.riding = false; W.ridePath = null; W.rideVel = null; S.lock--; }
 }
 
 /* ---------- capítulo IV: del instituto forense a la comisaría, con Elliot al volante ---------- */
