@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.5.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.5.2 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -1987,7 +1987,7 @@ function barInstanceKit(root) {
     const mm = e.mat.clone(); const im = new THREE.InstancedMesh(e.g, mm, e.mats.length);
     if (mm.emissive && mm.emissiveIntensity > 0 && mm.emissive.getHex() !== 0) (W.winMats = W.winMats || []).push([mm, mm.emissiveIntensity]);
     e.mats.forEach((mx, i) => im.setMatrixAt(i, mx.clone().premultiply(inv)));
-    im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.receiveShadow = true; im.castShadow = false; im.raycast = _noRay; root.add(im);
+    im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.receiveShadow = true; im.castShadow = false; im.raycast = _noRay; im.userData.cell = true; root.add(im);   // por celdas de 64 m: se pueden ocultar por distancia
   });
 }
 function barInst(geo, mat, list) {
@@ -2368,7 +2368,7 @@ function buildBarrio() {
     barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); if (W.liTick) W.liTick(dt, t); if (W.sohoTick) W.sohoTick(dt, t); if (W.tsTick) W.tsTick(dt, t); barCullTick(dt);
     const zn = barZone(); if (zn !== W._zone && W.mode === 'walk') { W._zone = zn; setLoc(zn, G.free ? todName(W.hour) : (W.walkSub || 'De noche, bajo la lluvia')); }
   };
-  { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
+  { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), ...(W.tsTrams || []).map(o => o.t), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
   if (G.free) libreBarrio(g, F);   // encargos, piezas y el piso de Franklin
   else storyBarrio(g, F);          // la historia pasa por la calle
 }
@@ -2443,6 +2443,8 @@ function barPedAt(R, s) {
 }
 function barPeds(dt) {
   for (const o of W.peds) {
+    const [x0, z0] = barPedAt(o.R, o.s), far = (x0 - P.x) ** 2 + (z0 - P.z) ** 2 > 120 * 120;   // lejos (en la niebla): se mueven, pero ni se dibujan ni se animan
+    if (far) { o.s += o.dir * o.sp * dt; if (o.p.group.visible) o.p.group.visible = false; o.col.x1 = o.col.x2 = o.col.z1 = o.col.z2 = 1e6; continue; } else if (!o.p.group.visible) o.p.group.visible = true;
     const [x, z, dx, dz] = barPedAt(o.R, o.s), fx = dx * o.dir, fz = dz * o.dir;
     const px = P.x - x, pz = P.z - z, ahead = px * fx + pz * fz, side = Math.abs(px * fz - pz * fx);
     const stop = W.mode === 'walk' && !(P.fy > 1) && ahead > 0 && (W.drive ? ahead < 3.6 && side < 1.8 : ahead < 1.3 && side < .7);
@@ -3664,22 +3666,26 @@ function barPark(g, q, h) {
 function barCullSetup(g, keep) {
   const list = [], b = new THREE.Box3(), s = new THREE.Sphere();
   const add = o => {
+    if (o.isInstancedMesh && o.userData.cell && o.boundingSphere) { const sp = o.boundingSphere.clone().applyMatrix4(o.matrixWorld); if (sp.radius < 120) list.push({ o, x: sp.center.x, z: sp.center.z, r: sp.radius }); return; }   // edificios del kit, por celdas
     if (keep.has(o) || o.isLight || o.isSprite || o.isPoints || o.isInstancedMesh || o.userData.keep) return;
     if (o.isMesh && o.material && (o.material.blending === THREE.AdditiveBlending || o.material.transparent)) return;
     b.setFromObject(o); if (b.isEmpty()) return; b.getBoundingSphere(s); if (s.radius > 90) return;
     list.push({ o, x: s.center.x, z: s.center.z, r: s.radius });
   };
   g.children.forEach(o => { if (keep.has(o)) return; if (o.isGroup && o.children.length > 3) o.children.forEach(add); else add(o); });
-  W.cull = { list, t: 0 };
+  const peds = new Set((W.peds || []).map(o => o.p));
+  W.cull = { list, t: 0, people: (W.people || []).filter(p => p !== P && !peds.has(p) && p.group && p.group.parent === g) };
 }
 function barCullTick(dt) {
   const C = W.cull; if (!C) return; C.t -= dt; if (C.t > 0) return; C.t = .35;
-  const R = 235, px = P.x, pz = P.z;
+  const R = 165, px = P.x, pz = P.z;                                  // más allá, la niebla ya no deja ver nada
   for (const it of C.list) {
     const far = Math.hypot(it.x - px, it.z - pz) - it.r > R;
     if (far) { if (it.o.visible) { it.o.visible = false; it.c = true; } }
     else if (it.c) { it.o.visible = true; it.c = false; }
   }
+  for (const p of C.people || []) { const q = p.group.position, far = (q.x - px) ** 2 + (q.z - pz) ** 2 > 120 * 120;   // la gente lejana, ni se dibuja (solo se enseña a quien escondimos nosotros)
+    if (far) { if (p.group.visible) { p.group.visible = false; p._cullHid = true; } } else if (p._cullHid) { p.group.visible = true; p._cullHid = false; } }
 }
 function barZone() { return tsIn(P.x, P.z) ? 'Times Square, Manhattan' : liIn(P.x, P.z) ? 'Little Italy, Manhattan' : sohoIn(P.x, P.z) ? 'SoHo, Manhattan' : mueIn(P.x, P.z) && P.x < -93 ? 'Los muelles del Hudson' : P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
 
@@ -5785,7 +5791,7 @@ const TS = { X: 250, XW: 228, XE: 272, R0: 235, R1: 265, ZN: -200, ZS: 205, T1: 
 function tsIn(x, z) { return x > 222 && x < 312 && z > -205 && z < 210; }
 function tsNeonTex(w, h, draw) { return textTex(w, h, 'rgba(0,0,0,0)', (c, cw, ch) => { c.shadowBlur = 16; draw(c, cw, ch); c.shadowBlur = 6; draw(c, cw, ch); }); }
 function barTimesSquare(g, q, row) {
-  const r = (m) => { m.raycast = _noRay; return m; }, T = TS;
+  const r = (m) => { m.raycast = _noRay; m.castShadow = false; return m; }, T = TS;
   W.tsAnim = []; W.tsZip = []; W.tsGlow = [];
   // ---- solares libres: la avenida, la Calle 45 y las calles que cruzan hacia el este, y Duffy Square
   barRect(228.5, -215, 271.5, 215); barRect(196, -7.5, 235, 7.5);
@@ -5809,8 +5815,8 @@ function barTimesSquare(g, q, row) {
     const wire = M(0x1a1a1a); [T.T1, T.T2].forEach(x => { const w = cyl(.02, .02, L, wire, x, 6.3, zc, null, 4); w.rotation.x = Math.PI / 2; r(w); }); }
   // ---- postes centrales: farolas dobles que sujetan el cable del tranvía, sobre isletas
   { const post = M(0x2a2c2a, { metalness: .5, roughness: .5 }), isl = [];
-    for (let z = -180; z <= 120; z += 30) { if (Math.abs(z) < 12) continue; r(box(1.2, .18, 5, conc, T.X, .09, z)); r(cyl(.1, .14, 7, post, T.X, 3.5, z, null, 8)); const arm = r(box(9, .08, .08, post, T.X, 6.4, z));
-      isl.push([T.X - .9, 0, z], [T.X + .9, 0, z]); col(T.X - .6, z - 2.5, T.X + .6, z + 2.5); }
+    const zs = []; for (let z = -180; z <= 120; z += 30) { if (Math.abs(z) < 12) continue; zs.push(z); isl.push([T.X - .9, 0, z], [T.X + .9, 0, z]); col(T.X - .6, z - 2.5, T.X + .6, z + 2.5); }
+    barInst(new THREE.BoxGeometry(1.2, .18, 5), conc, zs.map(z => [T.X, .09, z])); barInst(new THREE.CylinderGeometry(.1, .14, 7, 8), post, zs.map(z => [T.X, 3.5, z])); barInst(new THREE.BoxGeometry(9, .08, .08), post, zs.map(z => [T.X, 6.4, z]));
     (W.parkLamps = W.parkLamps || []).push(...isl); }
   // ---- colisiones
   col(200, -400, 330, -205); col(200, 205, 330, 400);
@@ -5941,8 +5947,14 @@ function barTimesSquare(g, q, row) {
   bld(228, -222, 272, -205, 30, 0x7a7068);
   bld(292, -172, 312, -148, 24, 0x8a7a6a);                        // detrás de Duffy Square
   // la ciudad sigue detrás de las fachadas (para que no se vea el cielo por los huecos)
-  for (let z = -205; z < 205; z += 18) for (let x = 288; x < 345; x += 17) barFill(g, x, z, x + 15, z + 15);
-  for (const [za, zb] of [[-205, -26], [26, 205]]) for (let z = za; z < zb; z += 18) for (let x = 180; x < 212; x += 17) barFill(g, x, z, x + 15, Math.min(z + 15, zb));
+  { const fill = []; const tryF = (x1, z1, x2, z2) => { for (let k = 0; k < 3; k++) { if (barFree(x1, z1, x2, z2)) { barRect(x1, z1, x2, z2); fill.push([x1, z1, x2, z2, rnd(18, 36)]); return; } x2 -= (x2 - x1) * .3; } };
+    for (let z = -205; z < 205; z += 18) for (let x = 288; x < 345; x += 17) tryF(x, z, x + 15, z + 15);
+    for (const [za, zb] of [[-205, -26], [26, 205]]) for (let z = za; z < zb; z += 18) for (let x = 180; x < 212; x += 17) tryF(x, z, x + 15, Math.min(z + 15, zb));
+    const t = facadeTex(1); t.repeat.set(3, 3); t.needsUpdate = true; const dm = dayFacadeTex(1); dm.repeat.set(3, 3); dm.needsUpdate = true;
+    const m = new THREE.MeshStandardMaterial({ color: 0x9a948a, map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .1, roughness: .95 }); m.userData.maps = [t, dm]; (W.winMats = W.winMats || []).push([m, .1, true]);
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), m, fill.length), d = new THREE.Object3D();
+    fill.forEach(([x1, z1, x2, z2, h], i) => { d.position.set((x1 + x2) / 2, h / 2, (z1 + z2) / 2); d.scale.set(x2 - x1, h, z2 - z1); d.updateMatrix(); im.setMatrixAt(i, d.matrix); });
+    im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.raycast = _noRay; im.receiveShadow = true; g.add(im); }
   // vallas al final de las calles que cruzan (la ciudad sigue en la niebla)
   { const saw = M(0xe8e2d0, { roughness: .7 }), sawR = M(0xb02a1e, { roughness: .7 });
     [-80, 0, 80].forEach(z => { for (let i = -2; i <= 2; i++) { const s = new THREE.Group(); s.position.set(311.5, 0, z + i * 2.6); s.rotation.y = Math.PI / 2; g.add(s); box(2.4, .22, .08, i % 2 ? saw : sawR, 0, .95, 0, s); [-1, 1].forEach(o => { const l = box(.08, 1.0, .08, M(0x3a3028), o * 1, .5, 0, s); l.rotation.z = o * .12; }); s.traverse(o => { o.raycast = _noRay; }); } }); }
@@ -5962,13 +5974,15 @@ function barTimesSquare(g, q, row) {
   for (let i = 0; i < [2, 3, 3][q]; i++) {
     const t = new THREE.Group(), [lo, up] = tramCols[i % 3], body = M(lo, { roughness: .5, metalness: .2 }), cream = M(up, { roughness: .6 });
     box(2.5, .9, 11.6, body, 0, .95, 0, t); box(2.5, 1.2, 11.6, cream, 0, 2.0, 0, t); box(2.6, .25, 11.8, body, 0, 2.7, 0, t); box(1.6, .45, 9, cream, 0, 3.0, 0, t); box(2.62, .12, 11.8, M(0x1a1a1a), 0, .45, 0, t);
-    const win = new THREE.MeshStandardMaterial({ color: 0x1a1c1e, emissive: 0xffd8a0, emissiveIntensity: .7, roughness: .2 }); (W.winMats = W.winMats || []).push([win, .7]);
-    [-1.27, 1.27].forEach(x => { for (let k = 0; k < 8; k++) plane(.95, .8, win, x, 2.05, -4.6 + k * 1.3, 0, x > 0 ? Math.PI / 2 : -Math.PI / 2, t); });
+    W._tramWin = W._tramWin || (() => { const dr = (emi) => (c, w, h) => { c.fillStyle = emi ? '#000' : up === 0xe8d8b0 ? '#e8d8b0' : '#d8c890'; c.fillRect(0, 0, w, h); for (let k = 0; k < 8; k++) { c.fillStyle = emi ? '#ffd8a0' : '#1a1c1e'; c.fillRect(6 + k * 63, 8, 52, 48); } };
+      const m = new THREE.MeshStandardMaterial({ map: ctex(512, 64, dr(false)), emissive: 0xffffff, emissiveMap: ctex(512, 64, dr(true)), emissiveIntensity: .7, roughness: .3 }); (W.winMats = W.winMats || []).push([m, .7]); return m; })();
+    const win = W._tramWin;
+    [-1.27, 1.27].forEach(x => plane(10.4, .82, win, x, 2.05, 0, 0, x > 0 ? Math.PI / 2 : -Math.PI / 2, t));
     [-5.81, 5.81].forEach(z => { plane(1.9, .8, win, 0, 2.05, z, 0, z > 0 ? 0 : Math.PI, t); sphere(.13, new THREE.MeshBasicMaterial({ color: 0xfff0c0 }), 0, 1.25, z * 1.01, t, 8, 6); });
     const pole = box(.06, .06, 6.4, M(0x1a1a1a), 0, 4.7, -1.5, t); pole.rotation.x = .53;
     [-1, 1].forEach(s => [-3.5, 3.5].forEach(z => { const w = cyl(.38, .38, .2, M(0x111111), s * .9, .38, z, t, 12); w.rotation.z = Math.PI / 2; }));
     plane(2, .32, new THREE.MeshBasicMaterial({ map: barSign('BROADWAY · 42', null, 2, .32, '#1a1a1a', '#ffd890', '700 90px Georgia, serif') }), 0, 2.85, 5.92, 0, 0, t);
-    t.traverse(o => { o.raycast = _noRay; }); g.add(t);
+    t.traverse(o => { o.raycast = _noRay; o.castShadow = false; }); g.add(t);
     const cr = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(cr);
     W.tsTrams.push({ t, s: loop.len * i / [2, 3, 3][q] + 20, v: 6, wait: 0, cr, L: loop, stopAt: -1 });
   }
@@ -5998,7 +6012,7 @@ function barTimesSquare(g, q, row) {
     [['Dorothy', '¿Usted también se ha perdido? Yo vine a ver los anuncios y me he encontrado un marinero. Mi madre no se lo va a creer.']]]);
   // mirones delante de los teatros (no se mueven: están mirando los carteles)
   const looks = [{ coat: 0x3a3e46, longCoat: true, hat: 'fedora', hatColor: 0x2a2622 }, { coat: 0x7a1a2a, hairStyle: 'bob', hair: 0x2a1a10, wcoat: 0x5a2a3a, whHat: 'cloche', hatColor: 0x1a1a22 }, { coat: 0x4a4038, hat: 'fedora', hatColor: 0x1e1e20, tie: 0x5a2a20 }, { coat: 0x1e3a3a, hairStyle: 'bob', hairLong: 1, hair: 0xb08a51, wcoat: 0x7a5a3a, whHat: 'pillbox', hatColor: 0x6a1a1a }];
-  [[234.2, 30, -Math.PI / 2], [234.2, 34.5, -Math.PI / 2 + .3], [234.2, 37, -Math.PI / 2 - .2], [265.8, -40, Math.PI / 2], [265.8, -44, Math.PI / 2 + .2], [234.2, -40, -Math.PI / 2], [265.8, 31, Math.PI / 2]].forEach(([x, z, ry], i) => {
+  [[234.2, 30, -Math.PI / 2], [234.2, 34.5, -Math.PI / 2 + .3], [265.8, -40, Math.PI / 2], [265.8, -44, Math.PI / 2 + .2], [265.8, 31, Math.PI / 2]].forEach(([x, z, ry], i) => {
     const p = makePerson(Object.assign({ skin: [0xc8a088, 0xd8b09a, 0xb88a6a, 0xe0bca4][i % 4], vary: false }, looks[i % looks.length])); p.group.position.set(x, .15, z); p.group.rotation.y = ry; g.add(p.group); p.gaze = true; col(x - .3, z - .3, x + .3, z + .3); });
   W.tsTick = tsTick;
 }
@@ -6007,7 +6021,7 @@ function barTimesSquarePeds(g, q) {
     { coat: 0xe8e8ec, sleeve: 0xe8e8ec, shirt: 0xe8e8ec, pants: 0xe8e8ec, hat: 'flat', hatColor: 0xf2f2f2 }, { coat: 0x1e3a3a, hairStyle: 'bob', hairLong: 1, hair: 0xb08a51, wcoat: 0x7a5a3a, whHat: 'pillbox', hatColor: 0x6a1a1a }, { coat: 0x5a5044, hat: 'fedora', hatColor: 0x3a342a }, { coat: 0x2a2a30, hat: 'fedora', hatColor: 0x1a1a1e }];
   // franjas de acera: la gente baja por un lado de la acera y sube por el otro
   const routes = [[230.4, 232.9, -196, -10], [230.4, 232.9, 10, 146], [268.0, 270.6, -146, -10], [268.0, 270.6, 10, 146], [230.4, 232.9, -120, -10], [230.4, 232.9, 10, 100], [268.0, 270.6, -100, -10], [268.0, 270.6, 10, 110]];
-  for (let i = 0; i < [8, 12, 16][q]; i++) {
+  for (let i = 0; i < [6, 9, 12][q]; i++) {
     const p = makePerson(Object.assign({ skin: [0xc8a088, 0xd8b09a, 0xb88a6a, 0xe0bca4][i % 4] }, looks[i % looks.length])); g.add(p.group); p.gaze = false;
     const R = routes[i % routes.length], per = 2 * (R[1] - R[0] + R[3] - R[2]), colR = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(colR);
     W.peds.push({ p, R, per, s: per * ((i * .37) % 1), dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .4, ph: Math.random() * 6, col: colR });
@@ -6024,12 +6038,14 @@ function tsTramTick(dt) {
     if (W.pcar && !W.drive) { const q = W.pcar.position, qx = q.x - at.x, qz = q.z - at.z, a2 = qx * at.dx + qz * at.dz, l2 = Math.abs(qx * at.dz - qz * at.dx); if (l2 < 2.4 && a2 > 0 && a2 < 16) vt = Math.min(vt, Math.max(0, (a2 - 8) * .9)); }
     // parada en la Calle 45 (en cada sentido) y en las cabeceras
     const stops = [182, L.cum[1] - .5, L.cum[2] + 126, L.cum[3] - .5];   // Calle 45 (bajando), cabecera sur, Calle 45 (subiendo), cabecera norte
+    for (const b of W.tsTrams) if (b !== o) { const gap = (b.s - o.s + L.len) % L.len; if (gap < 20) vt = Math.min(vt, Math.max(0, (gap - 15) * .8)); }
+    { const hx = o.cr.x2 - o.cr.x1, nx = P.x > o.cr.x1 - .5 && P.x < o.cr.x2 + .5 && P.z > o.cr.z1 - .5 && P.z < o.cr.z2 + .5; if (nx && hx > 0) vt = 0; }
     if (o.wait > 0) { o.wait -= dt; vt = 0; }
     else for (const sp of stops) { const d = sp - o.s; if (d > 0 && d < 12) vt = Math.min(vt, Math.max(.6, d * .7)); if (d <= 0 && d > -.4 && o.last !== sp) { o.last = sp; o.wait = 5; } }
     o.v += (vt - o.v) * Math.min(1, dt * (vt < o.v ? 2.5 : .8));
     o.s = (o.s + o.v * dt) % L.len;
     const p = barPathAt(L, o.s); o.t.position.set(p.x, .1, p.z);
-    const want = Math.atan2(p.dx, p.dz); let d = want - o.t.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); o.t.rotation.y += d * Math.min(1, dt * 3);
+    let want = Math.atan2(p.dx, p.dz), d = want - o.t.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); if (Math.abs(d) > Math.PI / 2) d = Math.atan2(Math.sin(d + Math.PI), Math.cos(d + Math.PI)); o.t.rotation.y += d * Math.min(1, dt * 3);
     const alongZ = Math.abs(p.dz) > Math.abs(p.dx), hx = alongZ ? 1.3 : 5.9, hz = alongZ ? 5.9 : 1.3; o.cr.x1 = p.x - hx; o.cr.x2 = p.x + hx; o.cr.z1 = p.z - hz; o.cr.z2 = p.z + hz;
   }
 }
@@ -7169,7 +7185,8 @@ function makeChar(spec) { return Q.ready ? makeCharQ(spec) : makeCharOld(spec); 
 /*QCHAR-END*/
 function animatePeople(dt, t) {
   if (!W || !W.people) return;
-  for (const p of W.people) { if (!p.group.visible) continue; p.animate(dt, t, S.talker === p); }
+  const far = W.name === 'barrio' ? 90 * 90 : 1e12, cx = camera.position.x, cz = camera.position.z;   /*PERF-people*/
+  for (const p of W.people) { if (!p.group.visible) continue; if (S.talker !== p && p.group.matrixWorld) { const m = p.group.matrixWorld.elements, dx = m[12] - cx, dz = m[14] - cz; if (dx * dx + dz * dz > far) continue; } p.animate(dt, t, S.talker === p); }
 }
 
 /* ---------- Brillos de pista ---------- */
