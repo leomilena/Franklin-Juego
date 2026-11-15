@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.6.2 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.7.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2120,6 +2120,7 @@ function buildBarrio() {
     { const f = barFrame('x', 40, -1); const rb = building(f, -15, -3 - 4.25, 14, 8.5, BAR.roofH, 1); rb.raycast = _noRay; }
     barRect(-22.3, 17, -8, 23.5);                                   // el callejón queda libre
     barTimesSquare(g, q, (axis, c, side, a, b, o) => { const f = barFrame(axis, c, side); const [la, lb] = barLocal(axis, side, a, b); barRow(f, la, lb, o); return f; });   // Times Square: Broadway, al este de Park (v2.5.1)
+    barCabStands(g);                                               // las paradas de taxi (v2.7)
     barRiver(g, q);
     // fachadas largas (mitad del fondo de la manzana cada una)
     const half = (BAR.blocks[0][3] - BAR.blocks[0][2]) / 2;
@@ -2365,7 +2366,7 @@ function buildBarrio() {
     if (rainObj.visible) rainUpd(dt); rainObj.position.set(P.x, P.fy || 0, P.z);
     W.fount.update(dt); if (W.alleySteam) W.alleySteam.update(dt);
     (W.sheets || []).forEach(sh => { sh.rotation.x = Math.sin(t * 1.7 + sh.userData.sway) * .14; });
-    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); if (W.liTick) W.liTick(dt, t); if (W.sohoTick) W.sohoTick(dt, t); if (W.tsTick) W.tsTick(dt, t); barCullTick(dt);
+    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); if (W.liTick) W.liTick(dt, t); if (W.sohoTick) W.sohoTick(dt, t); if (W.tsTick) W.tsTick(dt, t); if (W.cabTick) W.cabTick(dt, t); barCullTick(dt);
     const zn = barZone(); if (zn !== W._zone && W.mode === 'walk') { W._zone = zn; setLoc(zn, G.free ? todName(W.hour) : (W.walkSub || 'De noche, bajo la lluvia')); }
   };
   { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), ...(W.tsTrams || []).map(o => o.t), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
@@ -2410,17 +2411,24 @@ function barTraffic(dt, t) {
     // el jugador delante del coche
     const at = barPathAt(L, c.s); let blocked = false;
     // coches de otros recorridos justo delante (cruces y tramos compartidos)
-    for (const o of cars) if (o !== c && o.ln !== L) { const q = o.c.position, dx = q.x - at.x, dz = q.z - at.z, ah = dx * at.dx + dz * at.dz, lat = Math.abs(dx * at.dz - dz * at.dx); if (ah > 0 && ah < 14 && lat < 1.8) vt = Math.min(vt, Math.max(0, (ah - 6) * .8)); }
+    for (const o of cars) if (o !== c && o.ln !== L) { const q = o.c.position, dx = q.x - at.x, dz = q.z - at.z, ah = dx * at.dx + dz * at.dz, lat = Math.abs(dx * at.dz - dz * at.dx);
+      if (o.v < .3 && c.v < .3 && o.wait2 > 2 && c.wait2 > 2 && cars.indexOf(o) > cars.indexOf(c)) continue;   // atasco en un cruce: pasa primero uno (el de número más bajo)
+      if (ah > 0 && ah < 14 && lat < 1.8) vt = Math.min(vt, Math.max(0, (ah - 6) * .8)); }
     if (!(P.fy > 1)) { const px = P.x - at.x, pz = P.z - at.z, ahead = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx), dr = !!W.drive || !!W.riding;
-      if (W.riding && W.ridePath) for (const q of W.ridePath) { const fx = q.x - at.x, fz = q.z - at.z, a2 = fx * at.dx + fz * at.dz, l2 = Math.abs(fx * at.dz - fz * at.dx); if (l2 < 2.7 && a2 > 3.8 && a2 < 24 && Math.abs(q.dx * at.dx + q.dz * at.dz) < .7) vt = Math.min(vt, Math.max(0, (a2 - 5) * 1.1)); }   // el taxi de la historia: le ceden el paso en los cruces
-      if (lat < (W.riding && W.rideOut ? 3.3 : dr ? 2.6 : 1.9) && ahead > -1.5 && ahead < 16) { vt = Math.min(vt, Math.max(0, (ahead - (dr ? 5.6 : 4.2)) * 1.1)); blocked = ahead < 9; }
-      // (el taxi de la historia es el que cede el paso: ver rideDrive)
+      if (W.riding && W.ridePath && W.rideP && !(((W.rideP.x - at.x) * at.dx + (W.rideP.z - at.z) * at.dz) < 0 && Math.abs((W.rideP.x - at.x) * at.dz - (W.rideP.z - at.z) * at.dx) < 2.6)) for (const q of W.ridePath) { const fx = q.x - at.x, fz = q.z - at.z, a2 = fx * at.dx + fz * at.dz, l2 = Math.abs(fx * at.dz - fz * at.dx); if (l2 < 2.7 && a2 > 3.8 && a2 < 24 && Math.abs(q.dx * at.dx + q.dz * at.dz) < .7) vt = Math.min(vt, Math.max(0, (a2 - 5) * 1.1)); }   // el taxi de la historia: le ceden el paso en los cruces
+      if (lat < (dr ? 2.6 : 1.9) && ahead > -1.5 && ahead < 16) { vt = Math.min(vt, Math.max(0, (ahead - (dr ? 5.6 : 4.2)) * 1.1)); blocked = ahead < 9; }
       }
+    if (W.riding && W.rideP) { const px = W.rideP.x - at.x, pz = W.rideP.z - at.z, ahead = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx);   // el taxi (de la historia o uno pedido en una parada)
+      const al = W.rideDir ? Math.abs(W.rideDir[0] * at.dx + W.rideDir[1] * at.dz) : 1;
+      // muy cerca del taxi y mirando hacia él: se para (salvo que el coche esté metido en el camino del taxi: entonces es él quien sale)
+      { const d = Math.hypot(px, pz); if (d < 15 && d > .1 && (px * at.dx + pz * at.dz) / d > .35) { const q0 = c.c.position, inPath = (W.ridePath || []).slice(0, 5).some(q => Math.hypot(q.x - q0.x, q.z - q0.z) < 2.8); if (!inPath) vt = Math.min(vt, Math.max(0, (d - 6.8) * 1.0)); } }
+      if (lat < (W.rideOut && al > .8 ? 3.3 : 1.9) && ahead > -1.5 && ahead < 16) vt = Math.min(vt, Math.max(0, (ahead - 5.6) * 1.1)); }
     if (W.pcar && !W.drive) { const q = W.pcar.position, px = q.x - at.x, pz = q.z - at.z, ahead = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx);   /*CAR-traffic*/
       if (lat < 2.4 && ahead > 0 && ahead < 16) { vt = Math.min(vt, Math.max(0, (ahead - 5.2) * 1.1)); if (c.v < .3) W.pcarJam = (W.pcarJam || 0) + dt; } }
     c.v += (vt - c.v) * Math.min(1, dt * (vt < c.v ? 3 : 1.2)); if (c.v < .05) c.v = 0;
     c.s += c.v * dt;
-    if (c.s > L.len) { const busy = cars.some(o => o !== c && o.ln === L && o.s < 12); if (!busy) c.s = 0; else c.s = L.len; }
+    c.wait2 = c.v < .3 ? (c.wait2 || 0) + dt : 0;
+    if (c.s > L.len) { const s0 = L.pts[0], busy = cars.some(o => o !== c && o.ln === L && o.s < 12) || (W.riding && W.rideP && Math.hypot(W.rideP.x - s0[0], W.rideP.z - s0[1]) < 16); if (!busy) c.s = 0; else { c.s = L.len; c.v = 0; } }
     if (blocked && c.v < .3) { c.wait += dt; c.honk -= dt; if (c.wait > 1.4 && c.honk <= 0) { barHorn(c.c.position); c.honk = 3 + Math.random() * 2; } } else { c.wait = 0; c.honk = 0; }
     const p = barPathAt(L, c.s); c.c.position.set(p.x, 0, p.z);
     const want = Math.atan2(-p.dz, p.dx); let d = want - c.c.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); c.c.rotation.y += d * Math.min(1, dt * 3.5);
@@ -2744,7 +2752,7 @@ function drawBarrioMap(cv, o) {
   pin(-11.5, -6, 'Periódicos', '#6a5a3a', '¶');
   pin(-5.55, 10.6, 'Teléfono', '#6a1a14', '☎');
   pin(-130, 0, 'Muelle 84', '#3a4a5a', '⚓');
-  barDocksPins(pin); liPins(pin); sohoPins(pin); tsPins(pin);
+  barDocksPins(pin); liPins(pin); sohoPins(pin); tsPins(pin); if (typeof cabPins === 'function') cabPins(pin);
   pin(107, -20, 'The Meridian', '#1f3a2c', '♜');
   pin(143, 22, 'Instituto forense', '#3a4a4e', '✚');
   pin(96, -70, '1040 Madison', '#5a1e1a', '♞');
@@ -5520,7 +5528,7 @@ function barSoho(g, q, row) {
     const tr = mueTruck(0x9a1e14, null); tr.traverse(m => { if (m.isMesh && m.material && m.material.color && m.material.color.getHex() === 0x6a6a5e) { m.material = red; } });
     box(5.6, .12, .9, M(0xd8d2c4, { metalness: .6, roughness: .4 }), -1.6, 3.3, 0, tr); for (let i = 0; i < 9; i++) box(.08, .2, .9, M(0xd8d2c4, { metalness: .6 }), -4.1 + i * .62, 3.4, 0, tr);
     sphere(.22, M(0xc8a040, { metalness: .9, roughness: .3 }), 3.6, 1.65, .7, tr, 10, 8);
-    tr.position.set(fx + 8.5, 0, S.SZ - 2.1); tr.traverse(o => { o.raycast = _noRay; }); g.add(tr); col(fx + 4.1, S.SZ - 3.4, fx + 12.9, S.SZ - .8);
+    tr.position.set(fx + 8.5, 0, S.SZ - 2.5); tr.traverse(o => { o.raycast = _noRay; }); g.add(tr); col(fx + 4.1, S.SZ - 3.8, fx + 12.9, S.SZ - 1.2);
   }
   // ---- almacenes del Muelle del Hudson (lado este)
   const fH = barFrame('z', -103, 1), whBricks = [0x5a3a2c, 0x4e3a30, 0x664436, 0x48403a], whNames = ['ALMACENES HUDSON · TEXTILES', 'CAFÉ Y ESPECIAS · BRANDT & CÍA.', 'DEPÓSITO DE LANAS', 'TRANSPORTES WALSH', 'CURTIDOS DEL NORTE'];
@@ -5571,7 +5579,7 @@ function barSoho(g, q, row) {
     const bolt = [0x8a2a2a, 0x2a4a6a, 0xd8cca8, 0x3a5a3a, 0x6a4a7a]; for (let i = 0; i < 5; i++) { const c = cyl(.22, .22, 1.2, M(bolt[i % 5], { roughness: .9 }), -43.65, .45 + (i > 2 ? .4 : 0), 207 + (i > 2 ? (i - 3) * .46 + .23 : i * .46), null, 10); c.rotation.z = Math.PI / 2; r(c); }
     col(-44.3, 206.7, -43, 208.3); }
   // ---- coches aparcados y un camión descargando
-  [[-52.9, 186, 0x2a2a2a], [-52.9, 216, 0x3a4a3a], [-70, S.SZ - 2.95, 0x5a1e1a, 1], [-84, S.SZ + 2.95, 0x24343a, 1], [26, S.GZ + 2.95, 0x6a5a48, 1]].forEach(([x, z, c, ew]) => {
+  [[-52.9, 186, 0x2a2a2a], [-52.9, 216, 0x3a4a3a], [-70, S.SZ - 2.95, 0x5a1e1a, 1], [-84, S.SZ + 2.95, 0x24343a, 1]].forEach(([x, z, c, ew]) => {
     const car = makeCar(c); car.position.set(x, 0, z); car.rotation.y = ew ? 0 : Math.PI / 2; g.add(car);
     car.traverse(m => { m.raycast = _noRay; if (m.isMesh && m.material.emissive) { const h = m.material.emissive.getHex(); if (h === 0xfff0c8 || h === 0xff2010) { m.material = m.material.clone(); m.material.emissiveIntensity = 0; m.material.emissive.setHex(0x000000); } } });
     if (ew) col(x - 2.4, z - 1.05, x + 2.4, z + 1.05); else col(x - 1.05, z - 2.4, x + 1.05, z + 2.4); });
@@ -6038,6 +6046,7 @@ function tsTramTick(dt) {
     const px = P.x - at.x, pz = P.z - at.z, ah = px * at.dx + pz * at.dz, lat = Math.abs(px * at.dz - pz * at.dx);
     if (lat < 2 && ah > 0 && ah < 16) { vt = Math.min(vt, Math.max(0, (ah - 7.5) * .9)); if (vt < .2 && !o.bell) { o.bell = 2.5; if (A.ctx && Math.hypot(px, pz) < 40) { const t = A.ctx.currentTime; tone(1320, t, .25, 'triangle', .05); tone(1320, t + .3, .25, 'triangle', .05); } } }
     if (o.bell) o.bell = Math.max(0, o.bell - dt);
+    if (W.riding && W.rideP) { const qx = W.rideP.x - at.x, qz = W.rideP.z - at.z, a2 = qx * at.dx + qz * at.dz, l2 = Math.abs(qx * at.dz - qz * at.dx); if (l2 < 3.4 && a2 > 0 && a2 < 18) vt = Math.min(vt, Math.max(0, (a2 - 8.5) * .9)); }   // los taxis
     if (W.pcar && !W.drive) { const q = W.pcar.position, qx = q.x - at.x, qz = q.z - at.z, a2 = qx * at.dx + qz * at.dz, l2 = Math.abs(qx * at.dz - qz * at.dx); if (l2 < 2.4 && a2 > 0 && a2 < 16) vt = Math.min(vt, Math.max(0, (a2 - 8) * .9)); }
     // parada en la Calle 45 (en cada sentido) y en las cabeceras
     const stops = [182, L.cum[1] - .5, L.cum[2] + 126, L.cum[3] - .5];   // Calle 45 (bajando), cabecera sur, Calle 45 (subiendo), cabecera norte
@@ -6566,7 +6575,7 @@ async function storyBarrio(door, hour) {
   if (typeof LIB !== 'undefined') LIB.ringT = -1e9; if (typeof CRIME !== 'undefined') CRIME.t = 1e9;
 }
 // el taxi por dentro (como el de la escena antigua), montado sobre un coche que circula por el barrio
-function rideTaxi() {
+function rideTaxi(look, name) {
   const ride = new THREE.Group(); W.group.add(ride);
   const shell = makeCar(0xd8a820, { taxi: true }); shell.rotation.y = Math.PI / 2; ride.add(shell);
   shell.traverse(m => { m.raycast = _noRay; });
@@ -6585,10 +6594,10 @@ function rideTaxi() {
   const eyeM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
   [-.035, .035].forEach(x => { const e = new THREE.Mesh(new THREE.CircleGeometry(.008, 10), eyeM); e.position.set(x, .004, .018); mirror.add(e); });
   W.eyes = eyeM; W.eyesOn = false;
-  const elliot = makePerson(ELLIOT_LOOK); elliot.group.position.set(-.42, -.38, -.5); elliot.group.rotation.y = Math.PI; car.add(elliot.group);
+  const elliot = makePerson(look || ELLIOT_LOOK); elliot.group.position.set(-.42, -.38, -.5); elliot.group.rotation.y = Math.PI; car.add(elliot.group);
   elliot.hand = [V3(-.22, 1.48, .45), V3(.18, 1.5, .45)]; elliot.updateArms(); if (elliot.setBase) elliot.setBase('Driving_Loop');
   elliot.group.traverse(o => { if (o.isMesh) o.frustumCulled = false; }); elliot.gaze = false;
-  W.elliot = elliot; W.speakers['Conductor'] = elliot; W.speakers['Elliot Wade'] = elliot;
+  W.elliot = elliot; W.speakers['Conductor'] = elliot; W.speakers[name || 'Elliot Wade'] = elliot;
   const rim = new THREE.PointLight(0x9fb2d6, 1.1, 2.4, 1.6); rim.position.set(-.1, 1.52, .25); car.add(rim);
   car.traverse(o => { o.raycast = _noRay; if (o.isMesh) o.castShadow = false; });
   return { ride, shell, car, elliot };
@@ -6632,21 +6641,34 @@ function rideDrive(R, dt, vmax) {
   const L = R.L;
   // el tramo del recorrido en bruto por el que va (para saber dónde desviarse)
   if (R.raw && R.ri < R.raw.length - 2) { const B = R.raw[R.ri + 1], q = R.ride.position; if (Math.hypot(B[0] - q.x, B[1] - q.z) < 4) R.ri++; }
-  let vt = vmax;
+  let vt = vmax; R.why = 0; const _m = (k, v) => { if (v < vt && v < .3) R.why = k; return Math.min(vt, v); };
   // curvas: frena según lo que gira la calle en los próximos metros
   const a0 = barPathAt(L, R.s), a1 = barPathAt(L, Math.min(L.len, R.s + 11)), cs = Math.max(-1, Math.min(1, a0.dx * a1.dx + a0.dz * a1.dz)), ang = Math.acos(cs);
-  vt = Math.min(vt, vmax - (vmax - 3.2) * Math.min(1, ang / 1.25));
+  vt = _m(1, vmax - (vmax - 3.2) * Math.min(1, ang / 1.25));
   // el resto del tráfico: los de delante (mismo carril) y los que cruzan por delante en las intersecciones
   // (los que cruzan ven venir al taxi y le ceden el paso: ver barTraffic)
   let cross = false;
   for (const c of W.cars || []) { const q = c.c.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx);
     const cd = barPathAt(c.ln, c.s), same = cd.dx * a0.dx + cd.dz * a0.dz > .5;
-    if (same && ah > 0 && ah < 28 && lat < 2.4) vt = Math.min(vt, Math.sqrt(Math.max(0, ah - 6.8) * 2 * 3.2) + c.v * .8);
-    if (same && ah > -16 && ah < 3 && lat > 1.1 && lat < 3.9 && c.v > .3) vt = 0;   // al incorporarse (salir del bordillo, girar a otra calle), deja pasar a los que vienen por detrás
-    else if (!same && W.ridePath) { for (let k = 0; k < W.ridePath.length; k++) { const fp = W.ridePath[k]; if (Math.hypot(fp.x - q.x, fp.z - q.z) < 3.4) { vt = Math.min(vt, Math.sqrt(Math.max(0, k * 2 - 4.2) * 2 * 3.2)); cross = true; break; } } } }   // los que cruzan le ven venir y esperan (barTraffic)
+    if (cd.dx * a0.dx + cd.dz * a0.dz < -.7 && lat > 1.5) continue;   // los que vienen de frente por su carril
+    if (same && ah > 0 && ah < 28 && lat < 2.4) vt = _m(2, Math.sqrt(Math.max(0, ah - 6.8) * 2 * 3.2) + c.v * .8);
+    // al incorporarse o girar: si un coche va a pasar por donde el taxi está a punto de meterse, espera
+    if (c.v > .5 && W.ridePath && !(same && ah < 0 && lat < 2.4)) { let hit = -1; for (let tt = .4; tt < 2.6 && hit < 0; tt += .4) { const fq = barPathAt(c.ln, Math.min(c.ln.len, c.s + c.v * tt)), fx = fq.x, fz = fq.z;   /* por su recorrido, también si va girando */ for (let k = 2; k < Math.min(6, W.ridePath.length); k++) { const fp = W.ridePath[k]; if (Math.abs(fp.dx * fq.dx + fp.dz * fq.dz) > .7 && Math.hypot(fp.x - fx, fp.z - fz) < 3.0) { hit = k; break; } } }   /* solo al incorporarse a su carril: en los cruces, el que espera es el otro */
+      if (hit > 0) vt = _m(3, Math.sqrt(Math.max(0, hit * 2 - 4.6) * 2 * 3.2)); }
+    if (same && ah > -16 && ah < 3 && lat > 1.1 && lat < 3.9 && c.v > .3) vt = _m(99, 0);   // al incorporarse (salir del bordillo, girar a otra calle), deja pasar a los que vienen por detrás
+    else if (!same && W.ridePath) { for (let k = 0; k < W.ridePath.length; k++) { const fp = W.ridePath[k]; if (Math.hypot(fp.x - q.x, fp.z - q.z) < 3.4) { vt = _m(4, Math.sqrt(Math.max(0, k * 2 - 4.2) * 2 * 3.2)); cross = true; break; } } } }   // los que cruzan le ven venir y esperan (barTraffic)
+  // los tranvías de Broadway
+  if (W.tsTrams && W.ridePath) for (const o of W.tsTrams) { const b = o.cr, inB = fp => fp.x > b.x1 - 1.6 && fp.x < b.x2 + 1.6 && fp.z > b.z1 - 1.6 && fp.z < b.z2 + 1.6; { const f0 = W.ridePath[0]; if (f0.x > b.x1 - .4 && f0.x < b.x2 + .4 && f0.z > b.z1 - .4 && f0.z < b.z2 + .4) continue; }   /* ya está encima: que salga de las vías */
+    for (let k = 2; k < W.ridePath.length; k++) { if (inB(W.ridePath[k])) { vt = _m(5, Math.sqrt(Math.max(0, k * 2 - 5.4) * 2 * 3.2)); break; } }
+    // y dónde va a estar en los próximos segundos (los tranvías tienen preferencia)
+    if (o.v > .3) for (let tt = .5; tt < 3.1; tt += .5) { const fq = barPathAt(o.L, (o.s + o.v * tt) % o.L.len); let hit = -1;
+      for (let k = 1; k < Math.min(7, W.ridePath.length); k++) { const fp = W.ridePath[k], lx = Math.abs((fp.x - fq.x) * fq.dz - (fp.z - fq.z) * fq.dx), lz = Math.abs((fp.x - fq.x) * fq.dx + (fp.z - fq.z) * fq.dz); if (lx < 3.3 && lz < 7.6) { hit = k; break; } }
+      if (hit > 0) { vt = _m(6, Math.sqrt(Math.max(0, hit * 2 - 6) * 2 * 3.2)); break; } } }
+  // Franklin a pie, si se planta delante del taxi que viene a buscarle
+  if (!R.inside && !R.story) { const dx = P.x - a0.x, dz = P.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx); if (ah > 0 && ah < 9 && lat < 1.7) vt = _m(7, Math.max(0, (ah - 3.4) * .8)); }
   // la gente que cruza la calzada por delante
-  for (const o of W.peds || []) { const q = o.p.group.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx); if (ah > 0 && ah < 9 && lat < 1.6) vt = Math.min(vt, Math.max(0, (ah - 3.4) * .8)); }
-  if (R.stopAt != null) { const d = R.stopAt - R.s; vt = Math.min(vt, Math.max(0, Math.sqrt(Math.max(0, d) * 2.2) - .15)); }
+  for (const o of W.peds || []) { if (!o.p.group.visible) continue; const q = o.p.group.position, dx = q.x - a0.x, dz = q.z - a0.z, ah = dx * a0.dx + dz * a0.dz, lat = Math.abs(dx * a0.dz - dz * a0.dx); if (ah > 0 && ah < 9 && lat < 1.6) vt = _m(8, Math.max(0, (ah - 3.4) * .8)); }
+  if (R.stopAt != null) { const d = R.stopAt - R.s; vt = _m(9, Math.max(0, Math.sqrt(Math.max(0, d) * 2.2) - .15)); }
   // acelera y frena con suavidad
   const acc = vt > R.v ? 2.2 : 4.5; R.v += Math.max(-acc * dt, Math.min(acc * dt, vt - R.v)); if (R.v < 0) R.v = 0;
   R.s = Math.min(L.len, R.s + R.v * dt);
@@ -6656,8 +6678,8 @@ function rideDrive(R, dt, vmax) {
   R.roll = (R.roll || 0) + ((dt > 0 ? -yr / dt * R.v * .006 : 0) - (R.roll || 0)) * Math.min(1, dt * 3); R.pitch = (R.pitch || 0) + ((R.lastV != null && dt > 0 ? (R.lastV - R.v) / dt * .004 : 0) - (R.pitch || 0)) * Math.min(1, dt * 3); R.lastV = R.v;
   R.ride.position.set(p.x, Math.sin(performance.now() / 110) * .005 * Math.min(1, R.v / 4), p.z); R.ride.rotation.order = 'YXZ'; R.ride.rotation.set(Math.max(-.035, Math.min(.035, R.pitch)), R.yaw, Math.max(-.045, Math.min(.045, R.roll)));
   R.shell.userData.wheels && R.shell.userData.wheels.forEach(w => w.rotation.y += R.v * dt * 2.7);
-  W.rideOut = R.s > 10; { const fp = []; for (let d = 0; d <= Math.max(14, R.v * 2.6 + 7); d += 2) fp.push(barPathAt(L, Math.min(L.len, R.s + d))); W.ridePath = fp; }
-  P.x = p.x; P.z = p.z; W.rideVel = [-Math.sin(R.yaw) * R.v, -Math.cos(R.yaw) * R.v];
+  W.rideOut = R.s > 10; W.rideP = { x: p.x, z: p.z }; W.rideDir = [-Math.sin(R.yaw), -Math.cos(R.yaw)]; { const fp = []; for (let d = 0; d <= Math.max(14, R.v * 2.6 + 7); d += 2) fp.push(barPathAt(L, Math.min(L.len, R.s + d))); W.ridePath = fp; }
+  if (R.inside || R.story) { P.x = p.x; P.z = p.z; } W.rideVel = [-Math.sin(R.yaw) * R.v, -Math.cos(R.yaw) * R.v];
   return R.stopAt != null && R.v < .05 && R.stopAt - R.s < .6;
 }
 // cámara: asiento de atrás (dentro) o una toma de fuera
@@ -6675,7 +6697,7 @@ async function taxiRide(o) {
     if (typeof LIB !== 'undefined') { LIB.ringT = -1e9; if (LIB.act) libClear(); } if (typeof CRIME !== 'undefined') CRIME.t = 1e9;
     if (W.pcar) W.pcar.visible = W.pcar.position.distanceTo(V3(133.6, 0, 33.5)) > 6;
     W.hubTick = null; W.storyObj = null; W.obj = null;
-    const T = rideTaxi(), R = { ride: T.ride, shell: T.shell, car: T.car, s: 0, v: 0, yaw: 0, stopAt: null }; rideSetRaw(R, rideRawStart());
+    const T = rideTaxi(), R = { ride: T.ride, shell: T.shell, car: T.car, s: 0, v: 0, yaw: 0, stopAt: null, story: true }; rideSetRaw(R, rideRawStart());
     { const p = barPathAt(R.L, 0); R.yaw = Math.atan2(-p.dx, -p.dz); R.ride.position.set(p.x, 0, p.z); R.ride.rotation.y = R.yaw; }
     arrClearPeds((x, z) => Math.hypot(x - 136, z - 30) < 20);
     P.x = 134; P.z = 30; if (W.cull) { W.cull.t = 0; barCullTick(0); }
@@ -6726,7 +6748,7 @@ async function taxiRide(o) {
       await fadeOut();
     });
     W.update = u0;
-  } finally { W.riding = false; W.ridePath = null; W.rideVel = null; S.lock--; }
+  } finally { W.riding = false; W.ridePath = null; W.rideVel = null; W.rideP = null; S.lock--; }
 }
 
 /* ---------- capítulo IV: del instituto forense a la comisaría, con Elliot al volante ---------- */
@@ -6864,6 +6886,252 @@ async function alleyBarrio() {
   await say('Franklin', m === 0 ? 'Lo haré a mi manera. Con una orden judicial y con pruebas. Como siempre.' : 'Si hay que arriesgarlo todo para acabar con Mancini, que así sea.');
   endDialog(); W.hubTick = null; S.lock--;
   goChapter(7);
+}
+
+/* =========================================================
+   v2.7 · LAS PARADAS DE TAXI
+   En varias esquinas del mapa hay una parada. Pides un taxi, viene por las calles,
+   te subes, eliges destino y te lleva por el mapa de verdad (el mismo coche que el de Elliot).
+   A veces el taxista es Elliot Wade. Con las flechas (o arrastrando) miras por las ventanillas;
+   con E pides que pare donde estés.
+   ========================================================= */
+// ---- la red de calles: nodos (cruces) y tramos. off = distancia del carril al centro de la calle; one = sentido único
+const CAB_ROADS = [
+  { n: 'Calle 45', off: 2.6, pts: [[-103, 0], [-45, 0], [0, 0], [45, 0], [85, 0], [118.75, 0], [131.25, 0], [239, 0], [261, 0]] },
+  { n: 'Calle 46', off: 1.5, pts: [[-45, -40], [0, -40], [45, -40], [85, -40], [118.75, -40]] },
+  { n: 'Calle 44', off: 1.5, pts: [[-45, 40], [0, 40], [45, 40], [85, 40], [118.75, 40]] },
+  { n: 'Séptima', off: 1.5, pts: [[-45, -40], [-45, 0], [-45, 40]] },
+  { n: 'Quinta', off: 1.5, pts: [[45, -40], [45, 0], [45, 40]] },
+  { n: 'Sexta', off: 2.6, pts: [[0, -40], [0, 0], [0, 40], [0, 170], [0, 255]] },
+  { n: 'Madison', off: 2.6, pts: [[85, -40], [85, 0], [85, 40]] },
+  // Park Avenue: dos calzadas de sentido único, la vuelta del norte y el túnel a Little Italy
+  { n: 'Park (sur)', off: 0, one: true, pts: [[118.75, -106], [118.75, -40], [118.75, 0], [118.75, 40], [118.75, 147], [125, 163]] },
+  { n: 'Park (norte)', off: 0, one: true, pts: [[125, 163], [131.25, 147], [131.25, 0], [131.25, -106]] },
+  { n: 'Park (vuelta)', off: 0, one: true, pts: [[131.25, -106], [129, -112], [125, -113.5], [121, -112], [118.75, -106]] },
+  { n: 'Mulberry', off: 0, pts: [[125, 163], [125, 177], [125, 255]] },
+  { n: 'Grand Street', off: 2, pts: [[-103, 255], [-50, 255], [0, 255], [125, 255]] },
+  { n: 'Spring Street', off: 0, pts: [[-103, 170], [-50, 170], [0, 170]] },
+  { n: 'Greene Street', off: 0, pts: [[-50, 170], [-50, 255]] },
+  { n: 'Muelle del Hudson', off: 2.6, pts: [[-103, 0], [-103, 170], [-103, 255]] },
+  // Times Square: la Calle 45 cruza Broadway y sigue hacia el este; al fondo, una vuelta para regresar
+  { n: 'Calle 45 (este)', off: 2.6, pts: [[261, 0], [300, 0]] },
+  { n: 'Calle 45 (vuelta)', off: 0, one: true, pts: [[300, 2.6], [303.6, 1.8], [305, 0], [303.6, -1.8], [300, -2.6]] }
+];
+// los extremos de las vueltas se enganchan a las calles de doble sentido: el muelle del Hudson (carriles a ±2,6)
+const CAB_LINKS = [[[300, 0], [300, 2.6], true], [[300, -2.6], [300, 0], true]];
+// las paradas: tramo (a → b, en ese sentido), dónde está el coche (t) y el poste
+const CAB_STANDS = [
+  { id: 'belmont', name: 'The Belmont', sub: 'Calle 44, tu casa', a: [0, 40], b: [45, 40], t: .4, sign: [12, 45.6] },
+  { id: 'comisaria', name: 'Comisaría central', sub: 'Calle 46', a: [0, -40], b: [-45, -40], t: 12 / 45, sign: [-10, -45.6] },
+  { id: 'jazz', name: 'The Jazz Lantern', sub: 'Calle 45', a: [0, 0], b: [-45, 0], t: 28 / 45, sign: [-30, -5.6] },
+  { id: 'park', name: 'Park Avenue', sub: 'Instituto forense', a: [131.25, 147], b: [131.25, 0], t: 117 / 147, sign: [136.4, 30] },
+  { id: 'times', name: 'Times Square', sub: 'Broadway con la Calle 45', a: [261, 0], b: [300, 0], t: 24 / 39, sign: [285, 6.4] },
+  { id: 'li', name: 'Little Italy', sub: 'Mulberry Street', a: [125, 177], b: [125, 255], t: 13 / 78, sign: [129.5, 188] },
+  { id: 'soho', name: 'SoHo', sub: 'Sexta con Spring Street', a: [0, 40], b: [0, 170], t: 108 / 130, sign: [-6.4, 148] },
+  { id: 'muelles', name: 'Los muelles', sub: 'Calle 45, junto al Hudson', a: [-45, 0], b: [-103, 0], t: 45 / 58, sign: [-88, -6.2] }
+];
+const CAB_DRIVERS = [
+  { name: 'Mickey O\'Rourke', look: { coat: 0x3a3428, pants: 0x1e1c18, hat: 'flat', hatColor: 0x2a2620, skin: 0xd8a890, hair: 0x8a4a2a, seated: true, face: 'round' },
+    hi: ['¡Suba, suba, que no muerdo! Mickey O\'Rourke, para servirle. ¿Adónde vamos?', 'Taxi de Mickey, el más rápido de Midtown. Bueno, el segundo. ¿Adónde?'],
+    talk: ['Mi cuñado dice que los taxis tienen los días contados, que el futuro es el autobús. Mi cuñado también decía que los Dodgers ganarían la Serie Mundial.', '¿Ha probado los perritos de Sal, en Times Square? Le pone una mostaza que resucita a un muerto. Con perdón, detective.', 'Llevo veinte años conduciendo por esta ciudad y todavía hay calles que no sé cómo se llaman. Y los de Hacienda tampoco, por suerte.', 'Anoche subió un tipo con un loro. El loro pagó. En serio, sacó la moneda del pico.'],
+    bye: ['¡Ya estamos! Cuídese, detective, que esta ciudad no perdona.', 'Aquí le dejo. Si me necesita, pregunte por Mickey en cualquier parada.'] },
+  { name: 'Abe Feinberg', look: { coat: 0x2a2a30, pants: 0x18181c, hat: 'fedora', hatColor: 0x1a1a1e, skin: 0xe0bca4, hair: 0xb8b4ac, seated: true, face: 'lean' },
+    hi: ['Buenas, buenas. Abe Feinberg. Usted dirá adónde, y yo le diré por dónde.', 'Suba, joven. Con este frío, hasta el taxímetro tiene ganas de correr. ¿Adónde?'],
+    talk: ['Mi hijo estudia para dentista. Yo le digo: Abe Junior, la gente siempre tendrá dientes y siempre tendrá prisa. Elige.', 'En el 29 perdí todo lo que tenía en Wall Street. Desde entonces solo invierto en gasolina. Esa siempre sube.', 'Usted es el de los periódicos, ¿no? El detective del Rompecabezas. Mi mujer le recorta las fotos. Dice que tiene usted cara de buena persona y de pocas comidas.', 'Esta ciudad tiene ocho millones de historias. Yo me sé tres mil. Las otras me las inventan los clientes.'],
+    bye: ['Llegamos. Que tenga un buen día, o lo que quede de él.', 'Aquí es. Y abríguese, que en esta ciudad el viento viene de todas partes.'] },
+  { name: 'Lou Castellano', look: { coat: 0x5a4a3a, pants: 0x2a221a, hat: 'flat', hatColor: 0x3a2e24, skin: 0xc8a088, hair: 0x1a1410, seated: true, face: 'heavy' },
+    hi: ['Lou Castellano, a su servicio. Usted dice adónde y yo me pongo la radio bajita.', '¿Taxi? Taxi. ¿Adónde le llevo, jefe?'],
+    talk: ['Mi madre vive en Mulberry Street. Cada domingo le llevo cannoli de la Pasticceria Santa Lucia y cada domingo me dice que los suyos son mejores.', 'Los de Brooklyn conducen como si la calle fuera suya. Los de Manhattan, como si la calle fuera de los de Brooklyn y quisieran recuperarla.', 'A esta hora los semáforos de Park Avenue van a su aire. Yo también, para que no se sientan solos.', 'Una vez llevé a Sinatra. Bueno, a uno que se parecía. Bueno, a uno que cantaba en la ducha del hotel de al lado.'],
+    bye: ['Ya estamos, jefe. Que le vaya bonito.', 'Aquí le dejo. Si alguna vez quiere cannoli de verdad, pregunte por mi madre en Mulberry.'] }
+];
+const CAB_ELLIOT = { name: 'Elliot Wade', look: null,
+  hi: ['Vaya, vaya... Detective Franklin. La ciudad es pequeña cuando uno tiene ganas de encontrarse. ¿Adónde le llevo?', 'Suba, detective. Le estaba esperando. Es broma... ¿o no? ¿Adónde vamos?'],
+  talk: ['¿Sabe qué es lo bueno de este trabajo, detective? Que todo el mundo habla en el asiento de atrás. Como si el conductor fuera un mueble.', 'Esta ciudad es un tablero, Franklin. Unos son peones, otros alfiles... y algunos creen que son el rey hasta que les dan jaque.', 'Le veo cansado. Los buenos detectives siempre lo están. Los malos duermen de maravilla.', 'He llevado a jueces, a concejales, a gánsteres... y todos se bajan por la misma puerta.'],
+  bye: ['Hemos llegado, detective. Mire bien por dónde pisa.', 'Aquí le dejo. Hasta la próxima... que la habrá.'] };
+
+// ---- grafo dirigido y rutas sin cambios de sentido (salvo en las vueltas)
+const CAB = { nodes: null, edges: null, act: null };
+function cabKey(p) { return p[0].toFixed(2) + ',' + p[1].toFixed(2); }
+function cabGraph() {
+  if (CAB.nodes) return;
+  const nodes = new Map(), edges = [];
+  const node = p => { const k = cabKey(p); if (!nodes.has(k)) nodes.set(k, { k, p, out: [], inn: [] }); return nodes.get(k); };
+  const link = (A, B, off) => { const a = node(A), b = node(B), e = { a, b, off, len: Math.hypot(B[0] - A[0], B[1] - A[1]), i: edges.length }; edges.push(e); a.out.push(e); b.inn.push(e); return e; };
+  CAB_ROADS.forEach(r => { for (let i = 0; i < r.pts.length - 1; i++) { link(r.pts[i], r.pts[i + 1], r.off); if (!r.one) link(r.pts[i + 1], r.pts[i], r.off); } });
+  CAB_LINKS.forEach(([A, B]) => link(A, B, 0));
+  CAB.nodes = nodes; CAB.edges = edges;
+}
+function cabEdge(A, B) { cabGraph(); return CAB.edges.find(e => cabKey(e.a.p) === cabKey(A) && cabKey(e.b.p) === cabKey(B)); }
+// de un tramo a otro (Dijkstra por tramos: nunca da media vuelta en la misma calle)
+function cabRoute(e0, e1) {
+  cabGraph(); if (e0 === e1) return [e0];
+  const dist = new Map([[e0, 0]]), prev = new Map(), open = [e0];
+  while (open.length) {
+    open.sort((x, y) => dist.get(x) - dist.get(y)); const e = open.shift(); if (e === e1) break;
+    for (const f of e.b.out) { if (f.b === e.a && f.off > 0) continue; const d = dist.get(e) + f.len; if (d < (dist.has(f) ? dist.get(f) : 1e9)) { dist.set(f, d); prev.set(f, e); open.push(f); } }
+  }
+  if (!prev.has(e1)) return null;
+  const out = [e1]; let e = e1; while (prev.has(e)) { e = prev.get(e); out.unshift(e); } return out;
+}
+// del recorrido de tramos a los puntos del carril (esquinas = cruce de los dos carriles)
+function cabLane(e) { const dx = e.b.p[0] - e.a.p[0], dz = e.b.p[1] - e.a.p[1], L = Math.hypot(dx, dz), d = [dx / L, dz / L], r = [-d[1], d[0]]; return { a: [e.a.p[0] + r[0] * e.off, e.a.p[1] + r[1] * e.off], b: [e.b.p[0] + r[0] * e.off, e.b.p[1] + r[1] * e.off], d }; }
+function cabPoints(route, from, to) {
+  const pts = [from];
+  for (let i = 0; i < route.length - 1; i++) {
+    const A = cabLane(route[i]), B = cabLane(route[i + 1]), cr = A.d[0] * B.d[1] - A.d[1] * B.d[0];
+    if (Math.abs(cr) < 1e-3) { pts.push([(A.b[0] + B.a[0]) / 2, (A.b[1] + B.a[1]) / 2]); continue; }
+    const t = ((B.a[0] - A.a[0]) * B.d[1] - (B.a[1] - A.a[1]) * B.d[0]) / cr; pts.push([A.a[0] + A.d[0] * t, A.a[1] + A.d[1] * t]);
+  }
+  pts.push(to);
+  return pts.filter((q, i) => i === 0 || Math.hypot(q[0] - pts[i - 1][0], q[1] - pts[i - 1][1]) > .3);
+}
+function cabStandPt(st) { const e = cabEdge(st.a, st.b), L = cabLane(e); return { e, p: [L.a[0] + (L.b[0] - L.a[0]) * st.t, L.a[1] + (L.b[1] - L.a[1]) * st.t] }; }
+// un punto de partida a unos 90 m antes de la parada (recorrido hacia atrás, sin dar la vuelta)
+function cabUpstream(e, need) {
+  let route = [e], len = 0, cur = e;
+  for (let k = 0; k < 12 && len < need; k++) { const ins = cur.a.inn.filter(f => f.a !== cur.b); if (!ins.length) break; cur = ins[Math.floor(Math.random() * ins.length)]; route.unshift(cur); len += cur.len; }
+  return route;
+}
+// seguir circulando después de dejarte (para irse y desaparecer)
+function cabOnward(e, need) {
+  let route = [e], len = 0, cur = e;
+  for (let k = 0; k < 10 && len < need; k++) { const outs = cur.b.out.filter(f => !(f.b === cur.a && f.off > 0)); if (!outs.length) break; cur = outs[Math.floor(Math.random() * outs.length)]; route.push(cur); len += cur.len; }
+  return route;
+}
+
+// ---- las paradas en el barrio
+function barCabStands(g) {
+  cabGraph(); W.cabStands = []; CAB.act = null;   // mundo nuevo: el taxi anterior ya no existe
+  CAB_STANDS.forEach(st => {
+    hubTaxiSign(g, st.sign[0], st.sign[1]);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.6, 1.4), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(st.sign[0], 1.3, st.sign[1]); g.add(hit);
+    const def = inter(hit, { label: 'Pedir un taxi (parada de ' + st.name + ')', use: async () => cabCall(st) });
+    W.cabStands.push({ st, def });
+  });
+  W.cabTick = cabTick;
+}
+function cabPins(pin) { CAB_STANDS.forEach(st => pin(st.sign[0], st.sign[1], 'Parada de taxi · ' + st.name, '#b8901a', 'T')); }
+
+async function cabCall(st) {
+  if (CAB.act) { await say('Franklin', CAB.act.state === 'come' ? 'Ya he pedido uno. Viene de camino.' : 'Primero, a ver adónde me lleva este.'); endDialog(); return; }
+  if (W.drive) return;
+  const { e, p } = cabStandPt(st);
+  // ¿quién conduce? A veces, Elliot (cuando la historia lo permite)
+  const okElliot = G.hub == null ? !G.ch || G.ch >= 4 : (typeof G.hub === 'number' && G.hub >= 5 && G.hub <= 8);
+  const drv = okElliot && Math.random() < .3 ? CAB_ELLIOT : CAB_DRIVERS[Math.floor(Math.random() * CAB_DRIVERS.length)];
+  CAB.act = { st, drv, T: null, R: null, e, p, state: 'come', t: 0, hit: null, spawnT: 0 };
+  cabSpawn(CAB.act);
+  sfx('click'); toast('Taxi', 'Has pedido un taxi en la parada de ' + st.name + '. Espera junto al poste.');
+  setTimeout(() => { if (CAB.act && CAB.act.state === 'come' && !locked() && W.mode === 'walk') caps([[0, '¡Taxi!', 1600, 'Franklin']]).catch(() => {}); }, 200);
+}
+// el taxi aparece a unos 100 m, a media calle y donde no haya coches cerca (si no hay sitio, lo intenta en un momento)
+function cabSpawn(c) {
+  let up = null, start = null, best = -1;
+  for (let k = 0; k < 16; k++) { const u = cabUpstream(c.e, 110), L0 = cabLane(u[0]), tt = u.length > 1 ? [.25, .4, .55, .7][k % 4] : 0, st0 = [L0.a[0] + (L0.b[0] - L0.a[0]) * tt, L0.a[1] + (L0.b[1] - L0.a[1]) * tt];
+    const md = Math.min(99, ...(W.cars || []).map(q => Math.hypot(q.c.position.x - st0[0], q.c.position.z - st0[1])));
+    if (md > best) { best = md; up = u; start = st0; } if (md > 18) break; }
+  if (best < 11) return false;
+  const T = rideTaxi(c.drv.look, c.drv.name), R = { ride: T.ride, shell: T.shell, car: T.car, s: 0, v: 0, yaw: 0, stopAt: null };
+  rideSetRaw(R, cabPoints(up, start, c.p)); R.stopAt = R.L.len;
+  { const q = barPathAt(R.L, 0); R.yaw = Math.atan2(-q.dx, -q.dz); R.ride.position.set(q.x, 0, q.z); R.ride.rotation.y = R.yaw; }
+  c.T = T; c.R = R; W.riding = true; return true;
+}
+function cabEnd() {
+  const c = CAB.act; if (!c) return; CAB.act = null;
+  if (c.T && c.T.ride.parent) c.T.ride.parent.remove(c.T.ride);
+  if (c.hit) { const i = W.inters.indexOf(c.hit); if (i >= 0) W.inters.splice(i, 1); }
+  W.riding = false; W.ridePath = null; W.rideVel = null; W.rideP = null; W.eyesOn = false;
+  const b = document.getElementById('cabstop'); if (b) b.remove();
+}
+function cabTick(dt, t) {
+  const c = CAB.act; if (!c) return;
+  if (S.paused) return;
+  c.t += dt;
+  if (!c.R) { c.spawnT -= dt; if (c.spawnT <= 0) { c.spawnT = .5; cabSpawn(c); } if (!c.R) { if (c.t > 30 || Math.hypot(P.x - c.st.sign[0], P.z - c.st.sign[1]) > 70) cabEnd(); return; } }
+  const R = c.R;
+  if (W.eyes) W.eyes.opacity += ((W.eyesOn ? 1 : 0) - W.eyes.opacity) * Math.min(1, dt * 4);
+  if (c.state === 'come') {
+    // si te vas lejos o empieza una escena, el taxi se va
+    if (CINE.on || W.mode === 'cine' || Math.hypot(P.x - c.st.sign[0], P.z - c.st.sign[1]) > 70 || c.t > 150) { if (W.mode === 'walk' && !CINE.on) toast('Taxi', 'El taxi se ha ido sin ti.'); cabEnd(); return; }
+    const arrived = rideDrive(R, Math.min(dt, .05), 9);
+    if (arrived && !c.hit) {
+      c.state = 'wait'; barHorn(R.ride.position);
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2, 5), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(0, 1, 0); R.ride.add(hit);
+      c.hit = inter(hit, { label: 'Subir al taxi', use: async () => cabBoard() });
+      toast('Taxi', 'Ha llegado tu taxi. Acércate y súbete.');
+    }
+  } else if (c.state === 'wait') {
+    if (CINE.on || W.mode === 'cine') { cabEnd(); return; }
+    if (Math.hypot(P.x - R.ride.position.x, P.z - R.ride.position.z) > 70 || c.t > 240) { toast('Taxi', 'El taxi se ha cansado de esperar.'); cabEnd(); }
+  } else if (c.state === 'ride' || c.state === 'leave') {
+    const arrived = rideDrive(R, Math.min(dt, .05), c.state === 'leave' ? 9 : 10);
+    if (c.state === 'ride') {
+      rideCam(R);
+      // mirar por las ventanillas con las flechas
+      const L = W.lookLimit || [1.7, .4], sp = 1.7 * dt;
+      if (keys.ArrowLeft) W.look.yaw = Math.min(L[0], W.look.yaw + sp); if (keys.ArrowRight) W.look.yaw = Math.max(-L[0], W.look.yaw - sp);
+      if (keys.ArrowUp) W.look.pitch = Math.min(L[1], W.look.pitch + sp * .6); if (keys.ArrowDown) W.look.pitch = Math.max(-L[1], W.look.pitch - sp * .6);
+      // de vez en cuando, el taxista habla
+      c.chat = (c.chat == null ? 7 : c.chat) - dt;
+      if (c.chat <= 0 && !locked() && !capEl.classList.contains('on')) { c.chat = 16 + Math.random() * 10; const L2 = c.drv.talk, i = (c.ci = ((c.ci || 0) + 1)) % L2.length; const el = c.drv === CAB_ELLIOT; if (el) { W.eyesOn = true; setTimeout(() => { W.eyesOn = false; }, 4500); } caps([[0, L2[i], 5600, c.drv.name]]).catch(() => {}); }
+      if (arrived) cabArrive();
+    } else if (arrived || c.t > 40 || (c.t > 4 && Math.hypot(P.x - R.ride.position.x, P.z - R.ride.position.z) > 45)) cabEnd();   // se aleja y desaparece
+  }
+}
+async function cabBoard() {
+  const c = CAB.act; if (!c || c.state !== 'wait') return;
+  const R = c.R;
+  if (c.hit) { const i = W.inters.indexOf(c.hit); if (i >= 0) W.inters.splice(i, 1); c.hit.obj.parent && c.hit.obj.parent.remove(c.hit.obj); c.hit = null; }
+  S.lock++;
+  try {
+    sfx('door'); c.state = 'board'; rideInside(R, true); W.lookLimit = [1.7, .4]; ambient('taxi'); setLoc('En taxi', c.drv.name);
+    await wait(500);
+    if (c.drv === CAB_ELLIOT) { W.eyesOn = true; }
+    await say(c.drv.name, c.drv.hi[Math.floor(Math.random() * c.drv.hi.length)]);
+    W.eyesOn = false;
+    const dests = CAB_STANDS.filter(s => s !== c.st);
+    const i = await choose(dests.map(s => `${s.name}<small>${s.sub}</small>`).concat(['Mejor me bajo']), '¿Adónde vamos?');
+    if (i >= dests.length) { await say(c.drv.name, c.drv === CAB_ELLIOT ? 'Como quiera, detective. Ya nos veremos.' : 'Como usted diga. Otra vez será.'); endDialog(); cabExit(false); return; }
+    const d = dests[i]; c.dest = d;
+    await say('Franklin', d.id === 'belmont' ? 'A casa. Al Belmont, en la Calle 44.' : d.id === 'comisaria' ? 'A la comisaría central, en la Calle 46.' : `A ${d.name}. ${d.sub}.`);
+    await say(c.drv.name, c.drv === CAB_ELLIOT ? 'Será un placer.' : ['Marchando.', 'Agárrese al sombrero.', 'Hecho. Por el camino más corto... o casi.'][Math.floor(Math.random() * 3)]);
+    endDialog();
+    const { e, p } = cabStandPt(d), route = cabRoute(c.e, e);
+    if (!route) { await say(c.drv.name, 'Uy, por ahí no se puede pasar hoy. Mejor bájese aquí.'); endDialog(); cabExit(false); return; }
+    const q = R.ride.position; rideSetRaw(R, cabPoints(route, [q.x, q.z], p)); R.stopAt = R.L.len; R.v = 0; c.e = e;
+    c.state = 'ride'; c.t = 0; c.chat = 8;
+    setHelp(isTouch ? 'Arrastra para mirar por las ventanillas · botón Pare aquí' : 'Flechas o ratón: mirar por las ventanillas · E: pedir que pare aquí');
+    if (isTouch) { const b = document.createElement('button'); b.id = 'cabstop'; b.textContent = 'Pare aquí'; b.style.cssText = 'position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:30;padding:12px 18px;font:600 16px Georgia,serif;background:#d8a820;color:#1a1410;border:2px solid #1a1410;border-radius:6px'; b.onclick = () => cabStopHere(); document.body.appendChild(b); }
+  } finally { S.lock--; }
+}
+// «pare aquí»: frena en cuanto pueda
+function cabStopHere() { const c = CAB.act; if (!c || c.state !== 'ride') return; const R = c.R; R.stopAt = Math.min(R.L.len, R.s + Math.max(6, R.v * R.v / 5 + 3)); c.stopHere = true; toast('Taxi', 'Le pides al taxista que pare.'); }
+addEventListener('keydown', e => { if ((e.code === 'KeyE' || e.code === 'KeyF') && CAB.act && CAB.act.state === 'ride' && !locked() && !e.repeat) cabStopHere(); });
+async function cabArrive() {
+  const c = CAB.act; if (!c || c.state !== 'ride') return; c.state = 'arrived';
+  S.lock++;
+  try {
+    const d = c.stopHere ? null : c.dest;
+    if (c.drv === CAB_ELLIOT) W.eyesOn = true;
+    await say(c.drv.name, c.drv.bye[Math.floor(Math.random() * c.drv.bye.length)]);
+    W.eyesOn = false; endDialog();
+    if (d && c.drv === CAB_ELLIOT && !(libData().elliotRides)) { const D = libData(); D.elliotRides = 1; libSave(); }
+    cabExit(true);
+  } finally { S.lock--; }
+}
+// bajar del taxi: a la acera de la derecha, y el taxi se va
+function cabExit(moved) {
+  const c = CAB.act; if (!c) return; const R = c.R;
+  sfx('door'); rideInside(R, false); R.ride.updateMatrixWorld(true);
+  let out = null; for (let d = 3.6; d < 6.6 && !out; d += .5) { const o = R.ride.localToWorld(V3(d, 0, .2)); if (!collide(o.x, o.z)) out = o; } if (!out) out = R.ride.localToWorld(V3(3.6, 0, .2));
+  P.x = out.x; P.z = out.z; P.yaw = R.yaw; P.pitch = -.04; P.fy = 0;
+  W.mode = 'walk'; W.look = { yaw: 0, pitch: 0 }; W.lookLimit = null; sceneHud('barrio'); ambient('street'); setHelp(barHelp()); if (typeof barZone === 'function') setLoc(barZone(), todName(W.hour || 0));
+  const b = document.getElementById('cabstop'); if (b) b.remove();
+  // el taxi sigue su camino y desaparece
+  if (c.stopHere && c.state !== 'board') R.stopAt = R.L.len;   // sigue por donde iba
+  else { const q = R.ride.position, on = cabOnward(c.e, 120); rideSetRaw(R, cabPoints(on, [q.x, q.z], cabLane(on[on.length - 1]).b)); R.stopAt = R.L.len; }
+  R.v = 0;
+  c.state = 'leave'; c.t = 0;
 }
 
 /* =========================================================
