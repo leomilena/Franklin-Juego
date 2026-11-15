@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.4.2 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.5.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -2085,7 +2085,7 @@ function buildBarrio() {
   const conc = M(0xffffff, { map: tiles('#5a5a58', '#525250', 4, [1, 1]), roughness: .5, metalness: .12 });
   const slab = (x0, x1, z0, z1) => { const m = conc.clone(); m.map = conc.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.castShadow = false; b.raycast = _noRay; };
   BAR.blocks.concat([BAR.park]).forEach(([x0, x1, z0, z1]) => slab(x0 - 3, x1 + 3, z0 - 3, z1 + 3));
-  slab(-53, -5, -48, -45); slab(5, 53, -48, -45); slab(-53, -5, 45, 48); slab(5, 53, 45, 48);
+  slab(-53, -50, -48, -45); slab(-40, -5, -48, -45); slab(5, 53, -48, -45); slab(-53, -5, 45, 48); slab(5, 53, 45, 48);
   slab(-53, -50, -45, -5); slab(-53, -50, 5, 45); slab(50, 53, -35, -5); slab(50, 53, 5, 35);   // la Quinta tiene ahora cruce con la 46 y la 44 hacia el este
   slab(-8, -5, -125, -48); slab(5, 8, -125, -48); slab(-8, -5, 48, 125); slab(5, 8, 48, 125);
   slab(-95, -53, -8, -5); slab(-95, -53, 5, 8); slab(138, 196, -8, -5); slab(138, 196, 5, 8); madSlabs(slab);
@@ -2099,7 +2099,7 @@ function buildBarrio() {
   const zebra = new THREE.MeshBasicMaterial({ map: ctex(128, 32, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(225,220,200,.6)'; for (let x = 4; x < w; x += 16) c.fillRect(x, 0, 9, h); }), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
   const cross = (x, z, rot) => { const p = plane(9.4, 2.4, zebra, x, .007, z); p.rotation.set(-Math.PI / 2, rot, 0, 'YXZ'); p.raycast = _noRay; };
   // pasos de cebra solo donde hay calzada a los dos lados (nada de cebras debajo de las aceras)
-  const avOn = (X, z) => X === 0 || Math.abs(z) < 40;                     // la Séptima y la Quinta acaban en las calles 46 y 44
+  const avOn = (X, z) => X === 0 || Math.abs(z) < 40 || (X === -45 && z < 0);                     // la Séptima y la Quinta acaban en las calles 46 y 44
   const stOn = (Z, x) => Z === 0 || (x > -45 && x < 112);                  // la 46 y la 44 empiezan en la Séptima y llegan hasta Park
   BAR.XS.forEach(X => BAR.ZS.forEach(Z => {
     [-6.6, 6.6].forEach(d => { if (avOn(X, Z + Math.sign(d) * 8)) cross(X, Z + d, 0); if (stOn(Z, X + Math.sign(d) * 8)) cross(X + d, Z, Math.PI / 2); });
@@ -2119,6 +2119,7 @@ function buildBarrio() {
     F.bar = barFrame('z', -45, -1); { const [a, b] = barLocal('z', -1, 18, 30); barFacade(F.bar, (a + b) / 2); }
     { const f = barFrame('x', 40, -1); const rb = building(f, -15, -3 - 4.25, 14, 8.5, BAR.roofH, 1); rb.raycast = _noRay; }
     barRect(-22.3, 17, -8, 23.5);                                   // el callejón queda libre
+    barTimesSquare(g, q);                                          // Times Square, al norte de la Calle 46 por la Séptima (v2.5)
     barRiver(g, q);
     // fachadas largas (mitad del fondo de la manzana cada una)
     const half = (BAR.blocks[0][3] - BAR.blocks[0][2]) / 2;
@@ -2150,8 +2151,9 @@ function buildBarrio() {
 
   // ---- colisiones: manzanas, filas exteriores y vallas al final de las avenidas
   BAR.blocks.forEach(([x0, x1, z0, z1], i) => { if (i === 2) { col(-37, 8, -8, 17); col(-37, 23.5, -8, 32); col(-37, 17, -22, 23.5); } else col(x0, z0, x1, z1); });
-  col(-95, -200, -8, -48); col(8, -200, 53, -48); col(-95, 48, -8, 163); col(8, 48, 55, 248);
-  col(-95, -200, -53, -8); col(-95, 8, -53, 48); madColliders(); col(138, -260, 260, -8); col(138, 8, 260, 165); col(112, -260, 138, PARK.Z0 - 1);
+  col(8, -200, 53, -48);                                          // (al oeste de la Sexta, al norte de la 46, ahora está Times Square: sus colisiones las pone barTimesSquare)
+  col(-95, 48, -8, 163); col(8, 48, 55, 248);
+  col(-95, -48, -53, -8); col(-95, 8, -53, 48); madColliders(); col(138, -260, 260, -8); col(138, 8, 260, 165); col(112, -260, 138, PARK.Z0 - 1);
   col(-27.8, -48, -24.2, -46.3);                                  // escalinata de la comisaría
   col(-36.4, -45, -31.2, -42.8); col(-21.1, -45, -15.9, -42.8); col(-23.1, -47.4, -22.5, -46.8);   // coches patrulla y agente de la puerta
   const saw = M(0xe8e2d0, { roughness: .7 }), sawR = M(0xb02a1e, { roughness: .7 });
@@ -2239,7 +2241,7 @@ function buildBarrio() {
   const lanes = [barPath('ew', [[-105.6, -215], [-105.6, 2.6], [215, 2.6]], -11.9, 'x', [[PX - PS, 'x', 1], [MAD.X - 11.9, 'x', 2]]), barPath('ew', [[215, -2.6], [-100.4, -2.6], [-100.4, -215]], 11.9, 'x', [[PX + PS, 'x', 1], [MAD.X + 11.9, 'x', 2]]),
     barPath('ns', [[MAD.X - 2.6, -170], [MAD.X - 2.6, 170]], null, 'z', [[-11.9, 'z', 2]]), barPath('ns', [[MAD.X + 2.6, 170], [MAD.X + 2.6, -170]], null, 'z', [[11.9, 'z', 2]]),
     barPath('ns', [[-2.6, -125], [-2.6, 253], [-100.4, 253], [-100.4, -215]], -11.9, 'z'), barPath('ns', [[-105.6, -215], [-105.6, 257], [2.6, 257], [2.6, -125]], null, 'z', [[11.9, 'z', 0, 3]]),   /*SOHO-lanes*/
-    barPath('ns', [[PX + 6.25, PARK.Z1 + 16], [PX + 6.25, PARK.Z0 + 13], [PX + 4, PARK.Z0 + 7], [PX, PARK.Z0 + 5.5], [PX - 4, PARK.Z0 + 7], [PX - 6.25, PARK.Z0 + 13], [PX - 6.25, PARK.Z1 + 16]], null, 'z', [[11.9, 'z', 1], [-11.9, 'z', 1, 6]])];   /*PARK-uturn*/
+    barPath('ns', [[PX + 6.25, PARK.Z1 + 16], [PX + 6.25, PARK.Z0 + 13], [PX + 4, PARK.Z0 + 7], [PX, PARK.Z0 + 5.5], [PX - 4, PARK.Z0 + 7], [PX - 6.25, PARK.Z0 + 13], [PX - 6.25, PARK.Z1 + 16]], null, 'z', [[11.9, 'z', 1], [-11.9, 'z', 1, 6]])].concat(W.tsLanes || []);   /*PARK-uturn*/
   W.cars = [];
   const nCars = [8, 12, 16][q];
   for (let i = 0; i < nCars; i++) {
@@ -2274,7 +2276,7 @@ function buildBarrio() {
       W.peds.push({ p, R, per, s: Math.random() * per, dir: i % 2 ? 1 : -1, sp: 1.0 + Math.random() * .3, ph: Math.random() * 6, col: colR });
     } }
 
-  barDocksPeds(g, q); barLittleItalyPeds(g, q); barSohoPeds(g, q);   // los paseantes de los muelles y de Little Italy
+  barDocksPeds(g, q); barLittleItalyPeds(g, q); barSohoPeds(g, q); barTimesSquarePeds(g, q);   // los paseantes de los muelles y de Little Italy
   // ---- gente fija: vendedor de periódicos, policía de ronda
   const nb = makePerson({ coat: 0x5a4a3a, sleeve: 0xd8d2c4, shirt: 0xd8d2c4, hat: 'flat', hatColor: 0x3a3028, skin: 0xd8b09a, face: 'lean', vary: false });
   nb.group.scale.setScalar(.86); nb.group.position.set(-11.5, .15, -5.45); g.add(nb.group); nb.gaze = false;
@@ -2364,7 +2366,7 @@ function buildBarrio() {
     if (rainObj.visible) rainUpd(dt); rainObj.position.set(P.x, P.fy || 0, P.z);
     W.fount.update(dt); if (W.alleySteam) W.alleySteam.update(dt);
     (W.sheets || []).forEach(sh => { sh.rotation.x = Math.sin(t * 1.7 + sh.userData.sway) * .14; });
-    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); if (W.liTick) W.liTick(dt, t); if (W.sohoTick) W.sohoTick(dt, t); barCullTick(dt);
+    barTraffic(dt, t); barPeds(dt); barLights(dt); barNews(dt, t); barWaterTick(dt, t); if (W.skyMove) W.skyMove.position.set(camera.position.x, 0, camera.position.z); if (W.dockTick) W.dockTick(dt, t); if (W.liTick) W.liTick(dt, t); if (W.sohoTick) W.sohoTick(dt, t); if (W.tsTick) W.tsTick(dt, t); barCullTick(dt);
     const zn = barZone(); if (zn !== W._zone && W.mode === 'walk') { W._zone = zn; setLoc(zn, G.free ? todName(W.hour) : (W.walkSub || 'De noche, bajo la lluvia')); }
   };
   { const keep = new Set([...W.cars.map(c => c.c), ...W.peds.map(o => o.p.group), ...(W.floaters || []).map(f => f.o), ...(W.gulls || []).map(o => o.o), W.water, W.splash && W.splash.pts].filter(Boolean)); barCullSetup(g, keep); }
@@ -2708,7 +2710,7 @@ function drawBarrioMap(cv, o) {
   c.fillStyle = '#9fb3bc'; c.fillRect(0, 0, mx(-111), Hd); c.fillStyle = '#b89a70'; c.fillRect(mx(-150), mz(-4), (39) * sc, 8 * sc);
   c.fillStyle = '#7d4a3a'; c.fillRect(mx(-142), mz(-10.9), 15 * sc, 4.6 * sc);
   c.fillStyle = '#5a6a74'; c.font = 'italic 16px Georgia'; c.textAlign = 'center'; c.save(); c.translate(mx(-135), mz(-30)); c.rotate(-Math.PI / 2); c.fillText('Río Hudson', 0, 0); c.restore();
-  barDocksMap(c, mx, mz, sc, { region: dk ? 'docks' : 'mid' }); liMap(c, mx, mz, sc); sohoMap(c, mx, mz, sc);
+  barDocksMap(c, mx, mz, sc, { region: dk ? 'docks' : 'mid' }); liMap(c, mx, mz, sc); sohoMap(c, mx, mz, sc); tsMap(c, mx, mz, sc);
   c.fillStyle = '#f2e9d2'; c.fillRect(mx(-22), mz(17), 14 * sc, 6.5 * sc);
   BAR.blocks.forEach(([x0, x1, z0, z1]) => { c.fillStyle = '#c4b590'; c.fillRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); c.strokeStyle = 'rgba(90,80,60,.35)'; c.strokeRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc); });
   const [px0, px1, pz0, pz1] = BAR.park; c.fillStyle = '#b9c79a'; c.fillRect(mx(px0), mz(pz0), (px1 - px0) * sc, (pz1 - pz0) * sc);
@@ -2738,7 +2740,7 @@ function drawBarrioMap(cv, o) {
   pin(-11.5, -6, 'Periódicos', '#6a5a3a', '¶');
   pin(-5.55, 10.6, 'Teléfono', '#6a1a14', '☎');
   pin(-130, 0, 'Muelle 84', '#3a4a5a', '⚓');
-  barDocksPins(pin); liPins(pin); sohoPins(pin);
+  barDocksPins(pin); liPins(pin); sohoPins(pin); tsPins(pin);
   pin(107, -20, 'The Meridian', '#1f3a2c', '♜');
   pin(143, 22, 'Instituto forense', '#3a4a4e', '✚');
   pin(96, -70, '1040 Madison', '#5a1e1a', '♞');
@@ -2808,7 +2810,8 @@ function barrioBackdrop() {
     for (let i = 0, tries = 0; i < n && tries < n * 6; tries++) {
       const a = Math.random() * Math.PI * 2, r = r0 + Math.random() * (r1 - r0), cx = Math.cos(a) * r, cz = Math.sin(a) * r;
       if (ri === 0 && (Math.abs(cx) < 16 || Math.abs(cz) < 16)) continue;          // no tapar el final de las avenidas
-      if (cx < -105 && cz > -200) continue;                                               // sobre el río no hay torres
+      if (cx < -105 && cz > -200) continue;
+      if (ri === 0 && cx > -82 && cx < 0 && cz < -100 && cz > -185) continue;              // detrás de Times Square                                               // sobre el río no hay torres
       if (ri < 2 && cx > -240 && cx < -62 && cz < -30 && cz > -300) continue;          // los muelles del Hudson (y su niebla)
       if (cx > -115 && cx < 225 && cz > 60 && cz < 420) continue;                        // Little Italy y SoHo                // sobre el río no hay torres: se ve la otra orilla
       if (cx > 55 && cx < 170 + ri * 20 && cz > -175 && cz < 175) continue;           // Madison, Park Avenue y sus manzanas
@@ -3680,7 +3683,7 @@ function barCullTick(dt) {
     else if (it.c) { it.o.visible = true; it.c = false; }
   }
 }
-function barZone() { return liIn(P.x, P.z) ? 'Little Italy, Manhattan' : sohoIn(P.x, P.z) ? 'SoHo, Manhattan' : mueIn(P.x, P.z) && P.x < -93 ? 'Los muelles del Hudson' : P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
+function barZone() { return tsIn(P.x, P.z) ? 'Times Square, Manhattan' : liIn(P.x, P.z) ? 'Little Italy, Manhattan' : sohoIn(P.x, P.z) ? 'SoHo, Manhattan' : mueIn(P.x, P.z) && P.x < -93 ? 'Los muelles del Hudson' : P.x > PARK.X - PARK.HW - 6 ? 'Park Avenue, Manhattan' : P.x > MAD.X - 14 ? 'Madison Avenue, Manhattan' : 'Midtown, Manhattan'; }
 
 /* =========================================================
    LOS MUELLES DEL HUDSON (v2.2): la calle del muelle sigue hacia el norte.
@@ -5770,6 +5773,232 @@ async function sohoKesslerTalk() {
   await say('Otto Kessler', t[(W._kss = ((W._kss || 0) + 1)) % t.length]);
   if (D.done.incendio) await say('Otto Kessler', 'Y lo de Goldberg... Quién lo iba a decir. Me debía tres facturas: ahora ya sé que no las voy a cobrar nunca.');
   endDialog();
+}
+
+/* =========================================================
+   TIMES SQUARE (v2.5): la Séptima Avenida sigue al norte de la Calle 46, junto a la comisaría,
+   y se abre en la «pajarita»: la Times Tower con su cinta de noticias, Duffy Square,
+   los anuncios luminosos (el fumador de los aros de humo, la taza de café, el reloj, la cerveza),
+   el cine Astoria con su marquesina de bombillas, la sala de juegos y un carrusel de taxis.
+   Plaza: x de -68 (oeste) a -36 (este), z de -128 (norte) a -62 (sur).
+   ========================================================= */
+const TS = { X0: -68, X1: -36, Z0: -128, Z1: -62 };
+function tsIn(x, z) { return x > -70 && x < -34 && z > -130 && z < -47; }
+function tsNeonTex(w, h, draw) { return textTex(w, h, 'rgba(0,0,0,0)', (c, cw, ch) => { c.shadowBlur = 16; draw(c, cw, ch); c.shadowBlur = 6; draw(c, cw, ch); }); }
+function barTimesSquare(g, q) {
+  const r = (m) => { m.raycast = _noRay; return m; }, T = TS;
+  // la plaza queda libre (y la fila de la Calle 46 se corta para dejar pasar la Séptima)
+  barRect(-68, -62, -35, -47.5); barRect(-68, -128, -36, -62);
+  W.tsAnim = []; W.tsZip = []; W.tsGlow = [];
+  // ---- aceras e islas
+  const conc = M(0xffffff, { map: tiles('#5a5a58', '#525250', 4, [1, 1]), roughness: .5, metalness: .12 });
+  const slab = (x0, x1, z0, z1) => { const m = conc.clone(); m.map = conc.map.clone(); m.map.needsUpdate = true; m.map.repeat.set((x1 - x0) / 3, (z1 - z0) / 3); const b = box(x1 - x0, .15, z1 - z0, m, (x0 + x1) / 2, .075, (z0 + z1) / 2); b.raycast = _noRay; b.castShadow = false; };
+  slab(-53, -50, -62, -48); slab(-40, -35, -62, -48);                                   // la Séptima, entre la 46 y la plaza
+  slab(-68, -65, -128, -64.5); slab(-68, -53, -64.5, -62); slab(-40, -36, -128, -62); slab(-65, -40, -128, -125);
+  slab(-57, -48, -90, -70); slab(-58, -46, -112, -100);                                 // la isla de la Times Tower y Duffy Square
+  // ---- colisiones
+  col(-95, -200, -68, -48); col(-68, -62, -53, -48); col(-37, -64, -8, -48); col(-36, -200, -8, -64); col(-68, -200, -36, -128);
+  col(-57, -90, -48, -70);
+  // ---- edificios alrededor de la plaza (cada uno en su solar)
+  const bld = (x0, z0, x1, z1, h, col0) => { const b = building(g, (x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0, h, Math.floor(Math.random() * 3)); b.raycast = _noRay; if (col0) b.material.color.setHex(col0); return b; };
+  bld(-77, -78, -68, -62, 22, 0x8a6a5a); bld(-77, -104, -68, -78, 26, 0x7a7a72); bld(-77, -118, -68, -104, 20, 0x6a5a4e); bld(-77, -128, -68, -118, 30, 0x8a847a);
+  bld(-68, -140, -52, -128, 22, 0x7a6a5a); bld(-52, -140, -36, -128, 27, 0x8a8478);
+  bld(-36, -86, -22, -64, 24, 0x6a4a3a); bld(-36, -108, -22, -86, 28, 0x7a7068); bld(-36, -128, -22, -108, 23, 0x8a7a6a);
+  bld(-68, -62, -53, -48, 18, 0x7a5a4a);
+  // plantas bajas: escaparates iluminados y rótulos (lado: 'w' mira al este, 'e' al oeste, 'n' al sur, 's' al norte, 'sv' a la Séptima)
+  const shopWin = new THREE.MeshStandardMaterial({ color: 0x1a1612, emissive: 0xffc070, emissiveIntensity: .5 }); (W.winMats = W.winMats || []).push([shopWin, .5]);
+  const darkF = M(0x1e1c1a, { roughness: .6, metalness: .3 });
+  const face = (side, a, b) => side === 'w' ? [-67.97, (a + b) / 2, Math.PI / 2] : side === 'e' ? [-36.03, (a + b) / 2, -Math.PI / 2] : side === 'n' ? [(a + b) / 2, -127.97, 0] : side === 's' ? [(a + b) / 2, -62.03, Math.PI] : [-52.97, (a + b) / 2, Math.PI / 2];
+  const put = (side, a, b, w, h, y, mat, off) => { const [u, v, ry] = face(side, a, b), o = off || 0, n = [Math.sin(ry), Math.cos(ry)]; const x = side === 'n' || side === 's' ? u : u + n[0] * o, z = side === 'n' || side === 's' ? v + n[1] * o : v; return r(plane(w, h, mat, x, y, z, 0, ry)); };
+  const shop = (side, a, b, sign, sub, bg, fg) => { const L = Math.abs(b - a); put(side, a, b, L, 4.4, 2.2, darkF); put(side, a, b, L - 1.6, 2.6, 1.6, shopWin, .01);
+    if (sign) put(side, a, b, L - 1.2, .8, 3.7, new THREE.MeshBasicMaterial({ map: barSign(sign, sub, L - 1.2, .8, bg || '#1e1a14', fg || '#f2d890', '700 80px Georgia, serif') }), .02); };
+  shop('w', -62, -78, 'AUTOMAT', 'COMIDA CALIENTE · 5 CENTAVOS', '#e8e0cc', '#7a1a14'); shop('w', -78, -104, 'SOMBRERERÍA BROADWAY', 'FEDORAS · PANAMÁS · BOMBINES');
+  shop('w', -104, -118, 'PLAYLAND', 'PENNY ARCADE · TIRO AL BLANCO · FOTOS', '#1a1a2a', '#ffd84a'); shop('w', -118, -128, 'DRUGSTORE', 'SODA · TABACO · REVISTAS');
+  shop('n', -68, -52, 'CAFETERÍA DEL RELOJ', 'ABIERTO TODA LA NOCHE'); shop('n', -52, -36, 'DISCOS Y RADIOS', 'LOS ÉXITOS DE LA SEMANA');
+  shop('e', -64, -86, null); shop('e', -86, -108, 'BAR GOLDEN GLOW', 'CERVEZA FRÍA · BOCADILLOS'); shop('e', -108, -128, 'HOTEL CONTINENTAL', 'HABITACIONES · RESTAURANTE', '#2a1e14', '#e8d8a8');
+  shop('s', -68, -53, 'SODA FOUNTAIN', 'BATIDOS · HELADOS'); shop('sv', -48, -62, null);
+  // ---- la Times Tower: estrecha y alta, en la punta sur de la «pajarita», con su cinta de noticias
+  {
+    const tw = bld(-55.5, -88, -49.5, -70, 64, 0xd8ccb0); tw.material.color.setHex(0xd8ccb0);
+    const t2 = building(g, -52.5, -79, 4.4, 13, 8, 1); t2.position.y += 64; t2.raycast = _noRay; t2.material.color.setHex(0xd0c4a8);
+    const t3 = building(g, -52.5, -79, 2.6, 6, 7, 1); t3.position.y += 72; t3.raycast = _noRay; t3.material.color.setHex(0xc8bca0);
+    r(cyl(.08, .1, 8, M(0xd8d2c4), -52.5, 83, -79, null, 6));
+    const D = libData(); const news = ['LOS YANKEES GANAN EN EL BRONX: DIMAGGIO, DOS DE CUATRO', 'SE ESPERAN LLUVIAS SOBRE MANHATTAN TODA LA SEMANA', 'EL ALCALDE PROMETE MANO DURA CONTRA EL CRIMEN EN LOS MUELLES', D.done && D.done.incendio ? 'SOHO: GOLDBERG, DETENIDO POR QUEMAR SU PROPIO ALMACÉN' : 'ARDE UN ALMACÉN TEXTIL EN GREENE STREET', 'LA FIESTA DE SAN GENNARO LLENA MULBERRY STREET', 'LA POLICÍA BUSCA AL «ROMPECABEZAS»'];
+    const zc = document.createElement('canvas'); zc.width = 4096; zc.height = 64; const c = zc.getContext('2d');
+    c.fillStyle = '#0c0b0a'; c.fillRect(0, 0, 4096, 64); c.font = '700 44px "Special Elite", Courier, monospace'; c.fillStyle = '#ffb83a'; c.shadowColor = '#ff9a20'; c.shadowBlur = 8; c.textBaseline = 'middle';
+    let x = 20; news.forEach(t => { c.fillText('+++ ' + t + ' ', x, 34); x += c.measureText('+++ ' + t + ' ').width + 30; });
+    c.shadowBlur = 0; c.fillStyle = 'rgba(0,0,0,.55)'; for (let i = 0; i < 4096; i += 6) c.fillRect(i, 0, 2, 64); for (let j = 0; j < 64; j += 6) c.fillRect(0, j, 4096, 2);
+    const base = new THREE.CanvasTexture(zc); base.colorSpace = THREE.SRGBColorSpace; base.wrapS = THREE.RepeatWrapping;
+    [[-49.47, -79, -Math.PI / 2 + Math.PI, 18], [-55.53, -79, -Math.PI / 2, 18], [-52.5, -69.97, 0, 6], [-52.5, -88.03, Math.PI, 6]].forEach(([px, pz, ry, L], i) => {
+      const t = base.clone(); t.needsUpdate = true; t.repeat.set(L / 70, 1); t.offset.x = i * .21; W.tsZip.push(t);
+      r(plane(L, 1.1, new THREE.MeshBasicMaterial({ map: t }), px, 9.2, pz, 0, ry)); });
+    [[-49.5, -79, Math.PI / 2, 18], [-55.5, -79, -Math.PI / 2, 18]].forEach(([px, pz, ry, L]) => { r(box(.3, .25, L + .4, M(0x2a2622), px + Math.sin(ry) * .2, 9.9, pz)); r(box(.3, .25, L + .4, M(0x2a2622), px + Math.sin(ry) * .2, 8.5, pz)); });
+    r(plane(5, .9, new THREE.MeshBasicMaterial({ map: barSign('TIMES TOWER', 'UNO, TIMES SQUARE', 5, .9, '#d8ccb0', '#3a2e1e', '700 90px Georgia, serif') }), -52.5, 3.6, -69.96, 0, 0));
+    r(plane(4.4, 3, shopWin, -52.5, 1.6, -69.95, 0, 0));
+  }
+  // ---- Duffy Square: el padre Duffy en bronce y la cruz celta
+  {
+    const stone = M(0xb8b0a0, { roughness: .8 }), bronze = M(0x4a5a46, { metalness: .6, roughness: .45 });
+    r(box(2, 2, 2, stone, -52, 1.15, -106)); r(box(2.4, .3, 2.4, stone, -52, .3, -106));
+    const fig = new THREE.Group(); fig.position.set(-52, 2.15, -106); fig.rotation.y = 0; g.add(fig);
+    cyl(.38, .5, 1.7, bronze, 0, .85, 0, fig, 10); sphere(.22, bronze, 0, 1.92, 0, fig, 10, 8); const bk = box(.36, .46, .1, bronze, .2, 1.25, .3, fig); bk.rotation.x = .3; fig.traverse(o => { o.raycast = _noRay; });
+    r(box(.5, 5.2, .4, stone, -52, 2.75, -109.6)); r(box(2.4, .5, .4, stone, -52, 4.0, -109.6)); const ring = new THREE.Mesh(new THREE.TorusGeometry(.7, .1, 6, 20), stone); ring.position.set(-52, 4.0, -109.4); r(ring); g.add(ring);
+    col(-53.2, -107.2, -50.8, -104.8); col(-52.4, -110, -51.6, -109.2);
+    r(plane(1.8, .4, new THREE.MeshBasicMaterial({ map: barSign('FATHER DUFFY', '1871 – 1932', 1.8, .4, '#b8b0a0', '#2a241c', '700 90px Georgia, serif') }), -52, 1.4, -104.98, 0, 0));
+  }
+  // ---- los anuncios luminosos
+  const night = () => (W.lampK == null ? 1 : W.lampK);
+  const glowTex = ctex(64, 64, (c, w, h) => { const gr = c.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+  const spill = (x, z, w, d, color, k) => { const m = new THREE.MeshBasicMaterial({ map: glowTex, color, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }); const p = plane(w, d, m, x, .02, z, -Math.PI / 2); r(p); W.tsGlow.push([m, k || .35]); };
+  // 1) el fumador de Royal Crest (oeste): echa aros de humo sobre la plaza
+  {
+    const tex = ctex(512, 330, (c, w, h) => { c.fillStyle = '#e8dcc0'; c.fillRect(0, 0, w, h); c.fillStyle = '#a8261c'; c.fillRect(0, 0, w, 54); c.fillRect(0, h - 40, w, 40);
+      c.fillStyle = '#f2e6c4'; c.font = '700 44px Georgia'; c.textAlign = 'center'; c.fillText('ROYAL CREST', w / 2, 42); c.font = '22px "Special Elite", monospace'; c.fillText('EL TABACO DE LOS QUE SABEN ESPERAR', w / 2, h - 13);
+      c.fillStyle = '#d8a888'; c.beginPath(); c.ellipse(150, 186, 78, 98, 0, 0, 7); c.fill(); c.fillStyle = '#2a2420'; c.beginPath(); c.ellipse(150, 98, 104, 30, 0, 0, 7); c.fill(); c.fillRect(82, 52, 136, 50);
+      c.fillStyle = '#3a2e28'; c.fillRect(186, 158, 22, 8); c.fillStyle = '#1a1210'; c.beginPath(); c.arc(214, 222, 13, 0, 7); c.fill(); c.fillStyle = '#2a3a5a'; c.fillRect(70, 270, 160, 20);
+      c.fillStyle = '#5a1a14'; c.font = 'italic 700 34px Georgia'; c.textAlign = 'left'; c.fillText('¡Aros tan', 280, 150); c.fillText('suaves como', 280, 192); c.fillText('la noche!', 280, 234); });
+    put('w', -80, -102, 15, 9.6, 14, new THREE.MeshBasicMaterial({ map: tex }), .05);
+    W.tsRings = []; const ringT = ctex(64, 64, (c, w, h) => { c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 7; c.shadowColor = '#fff'; c.shadowBlur = 8; c.beginPath(); c.arc(32, 32, 20, 0, 7); c.stroke(); });
+    for (let i = 0; i < 5; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringT, transparent: true, depthWrite: false, opacity: 0 })); s.raycast = _noRay; g.add(s); W.tsRings.push({ s, t: i * 1.1 }); }
+    W.tsRingO = V3(-67.6, 14 + (.5 - 222 / 330) * 9.6, -91 - (214 / 512 - .5) * 15);   // la boca del fumador
+    spill(-63, -91, 12, 16, 0xffd0a0, .18);
+  }
+  // 2) Moka Royal (norte, derecha): la taza humea de verdad
+  {
+    const tex = ctex(512, 290, (c, w, h) => { c.fillStyle = '#1e3a2a'; c.fillRect(0, 0, w, h); c.fillStyle = '#e8d8a8'; c.font = '700 54px Georgia'; c.textAlign = 'left'; c.fillText('MOKA ROYAL', 200, 110); c.font = '22px "Special Elite", monospace'; c.fillText('EL CAFÉ DE NUEVA YORK', 204, 150); c.fillText('· DESDE LAS SEIS DE LA MAÑANA ·', 204, 186);
+      c.fillStyle = '#f2ecdc'; c.beginPath(); c.moveTo(48, 120); c.lineTo(168, 120); c.lineTo(150, 236); c.lineTo(66, 236); c.closePath(); c.fill(); c.strokeStyle = '#f2ecdc'; c.lineWidth = 12; c.beginPath(); c.arc(170, 168, 26, -1.3, 1.3); c.stroke();
+      c.fillStyle = '#5a3418'; c.fillRect(54, 124, 108, 14); c.fillStyle = '#c8a050'; c.fillRect(30, 238, 160, 10); });
+    put('n', -51, -37, 14, 8, 15, new THREE.MeshBasicMaterial({ map: tex }), .05);
+    const st = puffs(g, 7, { size: 1.6, rise: 4, alpha: .22, dur: 3.4, drift: .4, color: 0xf0ece4 }); st.origin.set(-44 + (108 / 512 - .5) * 14, 15 + (.5 - 120 / 290) * 8 + .3, -127.4); st.on = true; W.tsAnim.push(dt => st.update(dt));
+    spill(-44, -122, 14, 10, 0xb8e0c0, .16);
+  }
+  // 3) Relojes Atlas (norte, izquierda): un reloj enorme que da la hora del juego
+  {
+    const tex = ctex(512, 380, (c, w, h) => { c.fillStyle = '#14202e'; c.fillRect(0, 0, w, h); c.fillStyle = '#e8c87a'; c.font = '700 52px Georgia'; c.textAlign = 'center'; c.fillText('RELOJES ATLAS', w / 2, 60); c.font = '22px "Special Elite", monospace'; c.fillText('LA HORA EXACTA DE TIMES SQUARE', w / 2, h - 18);
+      c.fillStyle = '#f2ead4'; c.beginPath(); c.arc(w / 2, 200, 112, 0, 7); c.fill(); c.strokeStyle = '#c8a050'; c.lineWidth = 10; c.stroke(); c.fillStyle = '#14202e';
+      for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; c.fillRect(w / 2 + Math.sin(a) * 92 - 4, 200 - Math.cos(a) * 92 - 4, 8, 8); } });
+    put('n', -67, -53, 12, 8.9, 14, new THREE.MeshBasicMaterial({ map: tex }), .05);
+    const cy = 14 + 8.9 * (.5 - 200 / 380), cx = -60;
+    W.tsHands = [[.75, .16], [1.05, .1]].map(([l, w]) => { const hnd = new THREE.Group(); hnd.position.set(cx, cy, -127.85); g.add(hnd); const m = box(w, l, .04, M(0x14202e), 0, l / 2 - .08, 0, hnd); m.raycast = _noRay; return hnd; });
+    spill(-60, -122, 12, 8, 0xa0b8e0, .14);
+  }
+  // 4) Golden Glow (este): neón de cerveza con burbujas que suben
+  {
+    const tex = tsNeonTex(512, 256, (c, w, h) => { c.shadowColor = '#ffb030'; c.strokeStyle = '#ffd060'; c.fillStyle = '#ffcf5a'; c.lineWidth = 5; c.font = 'italic 700 78px Georgia'; c.textAlign = 'center'; c.fillText('Golden Glow', w / 2, 110);
+      c.font = '700 34px "Special Elite", monospace'; c.fillText('CERVEZA · LA RUBIA DE NUEVA YORK', w / 2, 180); c.strokeRect(14, 14, w - 28, h - 28); });
+    const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }); put('e', -88, -106, 15, 7.5, 14, m, .05);
+    r(plane(15.6, 8, M(0x14100c, { roughness: .9 }), -36.06, 14, -97, 0, -Math.PI / 2));
+    const bub = []; const bt = tsNeonTex(64, 64, (c) => { c.shadowColor = '#ffe080'; c.strokeStyle = '#fff0b0'; c.lineWidth = 6; c.beginPath(); c.arc(32, 32, 18, 0, 7); c.stroke(); });
+    for (let i = 0; i < 7; i++) { const s = plane(.9, .9, new THREE.MeshBasicMaterial({ map: bt, transparent: true, depthWrite: false }), -36.1, 18.6 + i * .7, -97 + (i % 3 - 1) * 1.6, 0, -Math.PI / 2); r(s); bub.push(s); }
+    let bt0 = 0; W.tsAnim.push(dt => { bt0 += dt; bub.forEach((s, i) => { s.visible = Math.floor(bt0 * 4 - i) % 8 < 5; }); m.opacity = Math.random() < .015 ? .35 : 1; });
+    spill(-41, -97, 10, 18, 0xffb040, .3);
+  }
+  // 5) el cine Astoria: marquesina con bombillas que corren y un cartel vertical
+  {
+    const mz = -75, mx = -37.4;
+    r(box(2.8, 1.8, 13, M(0x2a2420, { roughness: .5, metalness: .4 }), mx, 5.3, mz));
+    const board = textTex(1024, 160, '#f2ead6', (c, w, h) => { c.fillStyle = '#1a1410'; c.font = '700 54px Georgia'; c.textAlign = 'center'; c.fillText('LA DAMA DE LA NIEBLA', w / 2, 66); c.font = '600 40px Georgia'; c.fillStyle = '#7a1a14'; c.fillText('PRÓXIMAMENTE: EL CASO DEL ROMPECABEZAS', w / 2, 128); });
+    r(plane(12.4, 1.5, new THREE.MeshBasicMaterial({ map: board }), mx - 1.42, 5.3, mz, 0, -Math.PI / 2));
+    const side = textTex(256, 160, '#f2ead6', (c, w, h) => { c.fillStyle = '#7a1a14'; c.font = '700 64px Georgia'; c.textAlign = 'center'; c.fillText('ASTORIA', w / 2, 100); });
+    [mz - 6.52, mz + 6.52].forEach((z, i) => r(plane(2.6, 1.5, new THREE.MeshBasicMaterial({ map: side }), mx, 5.3, z, 0, i ? 0 : Math.PI)));
+    const bulbs = [[], [], []]; let n = 0; for (let z = mz - 6.3; z <= mz + 6.3; z += .36) [4.35, 6.25].forEach(y => bulbs[(n++) % 3].push([mx - 1.45, y, z]));
+    const bm = [0, 1, 2].map(() => new THREE.MeshBasicMaterial({ color: 0xffe0a0 })); bulbs.forEach((L, i) => barInst(new THREE.SphereGeometry(.07, 6, 4), bm[i], L));
+    let ct = 0; W.tsAnim.push(dt => { ct += dt; const k = Math.floor(ct / .14) % 3; bm.forEach((m, i) => m.color.setHex(i === k ? 0xfff4d0 : 0x6a5030)); });
+    const vt = tsNeonTex(128, 640, (c, w, h) => { c.shadowColor = '#ff4a3a'; c.fillStyle = '#ff6a5a'; c.font = '700 84px Georgia'; c.textAlign = 'center'; 'ASTORIA'.split('').forEach((ch, i) => c.fillText(ch, w / 2, 90 + i * 84)); });
+    r(box(1.8, 9, .3, M(0x1a1612), -36.95, 12.5, mz)); [1, -1].forEach(s => r(plane(1.7, 8.6, new THREE.MeshBasicMaterial({ map: vt, transparent: true, depthWrite: false }), -36.95, 12.5, mz + s * .16, 0, s > 0 ? 0 : Math.PI)));
+    spill(-40, mz, 8, 15, 0xffd8a0, .32);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(.6, 2.6, 5), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(-36.4, 1.3, mz); g.add(hit);
+    inter(hit, { label: 'Mirar la cartelera del Astoria', use: async () => { await narr('«La dama de la niebla», con una rubia que fuma mirando por una ventana. Y debajo, en letras rojas: «Próximamente: El caso del Rompecabezas».'); await say('Franklin', 'Alguien se ha enterado de mi caso antes que yo. En esta ciudad, hasta las películas van por delante de la policía.'); endDialog(); } });
+  }
+  // 6) Chop Suey (oeste) y el letrero vertical del hotel (este)
+  {
+    const cs = tsNeonTex(128, 640, (c, w, h) => { c.shadowColor = '#ff2a2a'; c.fillStyle = '#ff5050'; c.font = '700 70px Georgia'; c.textAlign = 'center'; 'CHOPSUEY'.split('').forEach((ch, i) => c.fillText(ch, w / 2, 76 + i * 72)); });
+    r(box(1.8, 8, .3, M(0x1a1612), -67.1, 11, -70)); [1, -1].forEach(s => { const p = r(plane(1.7, 7.6, new THREE.MeshBasicMaterial({ map: cs, transparent: true, depthWrite: false, side: THREE.DoubleSide }), -67.1, 11, -70 + s * .16, 0, s > 0 ? 0 : Math.PI)); W.tsChop = W.tsChop || []; W.tsChop.push(p.material); });
+    let ft = 0; W.tsAnim.push(dt => { ft += dt; const on = !(ft % 7 > 6.2 && ft % .3 < .15); W.tsChop.forEach(m => { m.opacity = on ? 1 : .15; }); });
+    const ht = tsNeonTex(128, 512, (c, w, h) => { c.shadowColor = '#60c0ff'; c.fillStyle = '#a8e0ff'; c.font = '700 84px Georgia'; c.textAlign = 'center'; 'HOTEL'.split('').forEach((ch, i) => c.fillText(ch, w / 2, 100 + i * 92)); });
+    r(box(1.6, 7, .3, M(0x1a1612), -36.85, 11.5, -118)); [1, -1].forEach(s => r(plane(1.5, 6.6, new THREE.MeshBasicMaterial({ map: ht, transparent: true, depthWrite: false }), -36.85, 11.5, -118 + s * .16, 0, s > 0 ? 0 : Math.PI)));
+    spill(-64, -70, 8, 8, 0xff6060, .3); spill(-40, -118, 8, 8, 0x80c8ff, .28);
+    r(box(2.2, .12, 6, M(0x5a1a14, { roughness: .6 }), -37.1, 3.4, -118));      // marquesina del hotel
+  }
+  // 7) Playland: la máquina de Madame Esmeralda (te lee el futuro por un centavo)
+  {
+    const mach = new THREE.Group(); mach.position.set(-67.3, .15, -111); mach.rotation.y = Math.PI / 2; g.add(mach);
+    box(1.1, 1.0, .8, M(0x5a1a2a, { roughness: .5 }), 0, .5, 0, mach); box(1.1, 1.1, .8, new THREE.MeshStandardMaterial({ color: 0xa8c8d0, transparent: true, opacity: .35, roughness: .05 }), 0, 1.55, 0, mach);
+    box(1.2, .3, .9, M(0xc8a040, { metalness: .8, roughness: .3 }), 0, 2.25, 0, mach); const f = makePerson({ coat: 0x6a1a5a, hairStyle: 'bob', hair: 0x1a1010, skin: 0xd8b09a, face: 'round', vary: false }); f.group.scale.setScalar(.45); f.group.position.set(0, 1.0, -.05); mach.add(f.group);
+    plane(1.0, .3, new THREE.MeshBasicMaterial({ map: barSign('MADAME ESMERALDA', 'SU FUTURO · 1¢', 1.0, .3, '#5a1a2a', '#ffd84a', '700 90px Georgia, serif') }), 0, 2.25, .46, 0, 0, mach);
+    mach.traverse(o => { o.raycast = _noRay; }); col(-67.9, -111.6, -66.7, -110.4);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 1.2), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(-67.2, 1.1, -111); g.add(hit);
+    const fut = ['Madame Esmeralda gira la cabeza con un chirrido. Sale una tarjeta: «Una mujer de rojo le traerá problemas. Usted ya lo sabía».', 'La tarjeta dice: «El hombre que busca lleva el mismo sombrero que usted». Franklin se quita el suyo y lo mira con desconfianza.', '«Pronto encontrará la pieza que falta». Al dorso, alguien ha dibujado a lápiz una pieza de rompecabezas.', '«Hoy no es su día de suerte. Mañana tampoco. Pruebe el jueves».', 'Madame Esmeralda se queda atascada a media frase. Le debe un centavo, detective.'];
+    inter(hit, { label: 'Echar un centavo a Madame Esmeralda', use: async () => { sfx('paper'); await narr(fut[(W._esm = ((W._esm || 0) + 1)) % fut.length]); endDialog(); } });
+  }
+  // ---- farolas
+  const lamps = []; [-70, -86, -102, -120].forEach(z => lamps.push([-65.4, 0, z])); [-82, -94, -112, -124].forEach(z => lamps.push([-39.6, 0, z])); [-60, -46].forEach(x => lamps.push([x, 0, -125.4]));
+  lamps.push([-50.6, 0, -56], [-39.4, 0, -58]); (W.parkLamps = W.parkLamps || []).push(...lamps);
+  // ---- el carrusel de taxis alrededor de la Times Tower y de Duffy Square (en sentido contrario a las agujas del reloj)
+  W.tsLanes = [barPath('ns', [[-42.5, -66], [-42.5, -116], [-45.5, -120.5], [-52, -121.5], [-59, -121], [-62.5, -116.5], [-62.5, -71], [-60, -66], [-52, -65.5], [-45.5, -65.5], [-42.5, -66]], null, 'z')];
+  // ---- gente: el vendedor de perritos, el chico de los periódicos, el guardia de tráfico, un marinero y su chica
+  const person = (look, x, z, ry, name, label, lines) => {
+    const p = makePerson(Object.assign({ vary: false }, look)); p.group.position.set(x, .15, z); p.group.rotation.y = ry; g.add(p.group); p.gaze = true; W.speakers[name] = p; col(x - .3, z - .3, x + .3, z + .3);
+    let i = 0; if (lines) inter(p.hitBox || p.group, { label, use: async () => { const Ls = lines[i++ % lines.length]; for (const [who, t] of Ls) await say(who, t); endDialog(); } }); return p;
+  };
+  { const cart = new THREE.Group(); cart.position.set(-39.4, .15, -100); g.add(cart); box(1.0, .9, 2, M(0xd8d2c4, { metalness: .6, roughness: .3 }), 0, .75, 0, cart); box(1.2, .06, 2.2, M(0xa8261c), 0, 2.2, 0, cart); [-.5, .5].forEach(z => cyl(.03, .03, 1.1, M(0x5a5a5a), 0, 1.7, z, cart, 6));
+    [-1, 1].forEach(s => { const w = cyl(.3, .3, .06, M(0x1a1a1a), .55, .3, s * .6, cart, 12); w.rotation.z = Math.PI / 2; });
+    plane(1.8, .4, new THREE.MeshBasicMaterial({ map: barSign('SALCHICHAS · 10¢', null, 1.8, .4, '#a8261c', '#f2e6c4', '700 90px Georgia, serif') }), -.51, 1.0, 0, 0, -Math.PI / 2, cart);
+    cart.traverse(o => { o.raycast = _noRay; }); col(-39.95, -101.1, -38.85, -98.9); }
+  person({ coat: 0xe8e2d4, sleeve: 0xe8e2d4, shirt: 0xe8e2d4, hat: 'flat', hatColor: 0xe8e2d4, skin: 0xc8a088, face: 'heavy' }, -38.6, -100, -Math.PI / 2, 'Sal Benedetto', 'Comprar una salchicha', [
+    [['Sal Benedetto', '¡Salchichas! Con mostaza y cebolla, diez centavos. Con chucrut, doce. Con conversación, gratis.'], ['', 'Franklin se la come de pie, mirando los anuncios. La mejor cena de Manhattan cuesta diez centavos y se toma de pie.']],
+    [['Sal Benedetto', 'Veinte años en esta esquina, detective. He visto pasar a medio Broadway. Las estrellas también comen salchichas; lo que pasa es que no lo cuentan.']]]);
+  person({ coat: 0x5a4a3a, hat: 'flat', hatColor: 0x3a2e24, skin: 0xd8b09a, face: 'round', hair: 0x6a4a2a }, -38.2, -57, -Math.PI / 2, 'Tommy, el de los periódicos', 'Hablar con el chico de los periódicos', [
+    [['Tommy, el de los periódicos', '¡Extra, extra! ¡La policía busca al Rompecabezas! ¡Lea la edición de la noche!'], ['Franklin', 'Ya me la sé de memoria, chaval.']],
+    [['Tommy, el de los periódicos', 'Aquí, delante de la comisaría, vendo el doble. Los polis compran el periódico para enterarse de lo que hacen ellos.']]]);
+  person({ coat: 0x1a2a4a, longCoat: true, hat: 'flat', hatColor: 0x14182a, skin: 0xd8a890, face: 'heavy', tie: 0x1a1a1a }, -52, -95, Math.PI, 'Agente de tráfico', 'Hablar con el guardia de tráfico', [
+    [['Agente de tráfico', 'Circule, circule. Aquí se para el tráfico cuando yo lo digo, no cuando se le antoja a un taxista de Brooklyn.']],
+    [['Agente de tráfico', 'En Nochevieja aquí caben medio millón de personas. Y todas pisan los mismos pies: los míos.']]]);
+  person({ coat: 0xe8e8ec, sleeve: 0xe8e8ec, shirt: 0xe8e8ec, pants: 0xe8e8ec, hat: 'flat', hatColor: 0xf2f2f2, skin: 0xd8b09a, face: 'lean' }, -50.4, -103.2, -Math.PI / 2, 'El marinero', 'Hablar con el marinero', [
+    [['El marinero', 'Tres días de permiso en Nueva York, detective. Ya la he visto entera: Times Square, Times Square y Times Square.']],
+    [['El marinero', 'Ella se llama Dorothy. Mañana embarco y ella vuelve a Ohio. Así que esta noche no pienso mirar el reloj de ese anuncio.']]]);
+  person({ coat: 0x7a1a2a, hairStyle: 'bob', hairLong: 1, hair: 0xb08a51, wcoat: 0x5a1a2a, whHat: 'pillbox', hatColor: 0x2a1a1a, skin: 0xe8c4a8, face: 'round' }, -51.4, -103.2, Math.PI / 2, 'Dorothy', 'Hablar con Dorothy', [
+    [['Dorothy', '¿Usted también se ha perdido? Yo vine a ver los anuncios y me he encontrado un marinero. Mi madre no se lo va a creer.']]]);
+  W.tsTick = tsTick;
+}
+function barTimesSquarePeds(g, q) {
+  const looks = [{ coat: 0x3a3e46, longCoat: true, hat: 'fedora', hatColor: 0x2a2622 }, { coat: 0x7a1a2a, hairStyle: 'bob', hair: 0x2a1a10, wcoat: 0x5a2a3a, whHat: 'cloche', hatColor: 0x1a1a22 }, { coat: 0x4a4038, hat: 'fedora', hatColor: 0x1e1e20, tie: 0x5a2a20 },
+    { coat: 0xe8e8ec, sleeve: 0xe8e8ec, shirt: 0xe8e8ec, pants: 0xe8e8ec, hat: 'flat', hatColor: 0xf2f2f2 }, { coat: 0x1e3a3a, hairStyle: 'bob', hairLong: 1, hair: 0xb08a51, wcoat: 0x7a5a3a, whHat: 'pillbox', hatColor: 0x6a1a1a }, { coat: 0x5a5044, hat: 'fedora', hatColor: 0x3a342a }];
+  const routes = [[-66.2, -37.3, -126.5, -63.2], [-66.2, -37.3, -126.5, -63.2], [-66.2, -37.3, -126.5, -63.2], [-66.2, -37.3, -126.5, -63.2], [-57, -47, -111, -101], [-66.2, -37.3, -126.5, -63.2], [-66.2, -37.3, -126.5, -63.2], [-57, -47, -111, -101]];
+  for (let i = 0; i < [5, 7, 8][q]; i++) {
+    const p = makePerson(Object.assign({ skin: [0xc8a088, 0xd8b09a, 0xb88a6a, 0xe0bca4][i % 4] }, looks[i % looks.length])); g.add(p.group); p.gaze = false;
+    const R = routes[i % routes.length], per = 2 * (R[1] - R[0] + R[3] - R[2]), colR = { x1: 0, z1: 0, x2: 0, z2: 0 }; W.colliders.push(colR);
+    W.peds.push({ p, R, per, s: per * i / 8 + Math.random() * 6, dir: i % 2 ? 1 : -1, sp: 1.05 + Math.random() * .35, ph: Math.random() * 6, col: colR });
+  }
+}
+function tsTick(dt, t) {
+  const N = W.lampK == null ? 1 : W.lampK;
+  W.tsZip.forEach(z => { z.offset.x = (z.offset.x + dt * .035) % 1; });
+  W.tsGlow.forEach(([m, k]) => { m.opacity = k * (.15 + .85 * N); });
+  (W.tsAnim || []).forEach(f => f(dt, t));
+  if (W.tsHands) { const h = (W.hour || 0) % 12, mi = ((W.hour || 0) % 1) * 60; W.tsHands[0].rotation.z = -h / 12 * Math.PI * 2; W.tsHands[1].rotation.z = -mi / 60 * Math.PI * 2; }
+  if (W.tsRings) for (const o of W.tsRings) { o.t += dt; const u = (o.t % 5.5) / 5.5, s = o.s; s.position.set(W.tsRingO.x + u * 9, W.tsRingO.y + u * 3.5, W.tsRingO.z + Math.sin(u * 3 + o.t) * .4); s.scale.setScalar(.8 + u * 3.2); s.material.opacity = Math.sin(u * Math.PI) * .7; }
+  const inT = tsIn(P.x, P.z) && P.z < -60;
+  if (inT && !W._tsIn && W.mode === 'walk' && !CINE.on) {
+    toast('Times Square', 'La Séptima con Broadway');
+    if (!W._tsSeen) { W._tsSeen = true; caps([[600, 'Times Square. El cruce del mundo: anuncios que no se apagan nunca, taxis que no paran nunca y gente que nunca mira hacia arriba, porque ya lo ha visto todo.', 6000]]).catch(() => {}); }
+  }
+  W._tsIn = inT;
+}
+// plano
+function tsMap(c, mx, mz, sc) {
+  c.fillStyle = '#f2e9d2'; const road = (x0, z0, x1, z1) => c.fillRect(mx(x0), mz(z0), (x1 - x0) * sc, (z1 - z0) * sc);
+  road(-53, -62, -35, -48); road(-68, -128, -36, -62);
+  c.fillStyle = '#d8ccb0'; c.fillRect(mx(-55.5), mz(-88), 6 * sc, 18 * sc);
+  c.fillStyle = '#c8d0b0'; c.fillRect(mx(-58), mz(-112), 12 * sc, 12 * sc);
+  c.fillStyle = '#5a5244'; c.font = '13px "Special Elite",monospace'; c.textAlign = 'center';
+  c.save(); c.translate(mx(-62) + 4, mz(-95)); c.rotate(-Math.PI / 2); c.fillText('BROADWAY', 0, 0); c.restore();
+  c.fillStyle = '#4a2e1e'; c.font = 'italic 20px Georgia'; c.fillText('Times Square', mx(-52), mz(-133));
+}
+function tsPins(pin) {
+  pin(-52.5, -79, 'Times Tower', '#8a6a2a', '◆');
+  pin(-38, -75, 'Cine Astoria', '#5a2a4a', '▶');
+  pin(-52, -106, 'Duffy Square', '#4a5a46', '✝');
 }
 
 /* =========================================================
