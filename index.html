@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.4.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.4.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -3543,8 +3543,10 @@ function parkCentral(g) {
   const stoneD = M(0xa8987a, { roughness: .85 }), dark = new THREE.MeshBasicMaterial({ color: 0x07080a });
   r(box(44.8, .9, 18.8, stoneD, PARK.X, 32.2, z0 + 9)); r(box(44.4, 1.2, 1.0, stoneD, PARK.X, 9, z0 - .2));
   // los dos túneles por los que pasa el tráfico y los arcos de peatones
+  // (v2.4.1) los túneles de los coches ya no tienen la «puerta» negra: se ve el túnel de verdad; arriba, el tímpano del arco es de piedra
+  const door = M(0x2a2018, { roughness: .8 });
   [[PARK.X - 6.25, 6.4, 7.4], [PARK.X + 6.25, 6.4, 7.4], [PARK.X - 15.5, 3, 4.6], [PARK.X + 15.5, 3, 4.6]].forEach(([x, w, h]) => {
-    r(plane(w, h, dark, x, h / 2, z0 - .02, Math.PI)); const arc = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 20, 0, Math.PI), dark); arc.position.set(x, h, z0 - .02); arc.rotation.y = Math.PI; arc.raycast = _noRay; g.add(arc);
+    const car = w > 4; if (!car) r(plane(w, h, door, x, h / 2, z0 - .02, Math.PI)); const arc = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 20, 0, Math.PI), car ? stoneD : door); arc.position.set(x, h, z0 - .02); arc.rotation.y = Math.PI; arc.raycast = _noRay; g.add(arc);
     r(box(w + .8, .4, .5, stoneD, x, h + w / 2 + .3, z0 - .1));
   });
   // torre, reloj y la cúpula dorada que se ve entre la niebla
@@ -4277,16 +4279,16 @@ function barLittleItaly(g, q) {
   {
     const stone = M(0xcbbd9e, { roughness: .85 }), stoneD = M(0xa8987a, { roughness: .85 }), dark = new THREE.MeshBasicMaterial({ color: 0x07080a });
     r(box(10.8, 14, 12, stone, X - 9.6, 7, Z - 94)); r(box(10.8, 14, 12, stone, X + 9.6, 7, Z - 94)); r(box(8.4, 6.4, 12, stone, X, 10.8, Z - 94)); r(box(30.6, .8, 12.6, stoneD, X, 14.2, Z - 94));
-    const arc = new THREE.Mesh(new THREE.CircleGeometry(4.2, 20, 0, Math.PI), dark); arc.position.set(X, 6.4, Z - 87.97); r(arc); g.add(arc);
+    const arc = new THREE.Mesh(new THREE.CircleGeometry(4.2, 20, 0, Math.PI), stoneD); arc.position.set(X, 7.6, Z - 87.97); r(arc); g.add(arc);   // tímpano de piedra (sin «puerta» negra)
     r(box(9.2, .5, .5, stoneD, X, 10.9, Z - 87.8));
     r(plane(9, 1.1, new THREE.MeshBasicMaterial({ map: barSign('TÚNEL DE PARK AVENUE', '↑ MIDTOWN · NEW YORK CENTRAL', 9, 1.1, '#cbbd9e', '#3a2e1e', '700 90px Georgia, serif') }), X, 12.4, Z - 87.95, 0, 0));
     // el pasadizo (paredes, techo y luces), desde el New York Central (z = PARK.Z1 + 2) hasta la boca de Mulberry
     const zA = PARK.Z1 + 2, zB = zA + 18, zC = Z - 100, zD = Z - 88, H = 7.6;
-    const wallM = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: ctex(64, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#5a5248'); gr.addColorStop(.25, '#3e3832'); gr.addColorStop(1, '#1e1b18'); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 8; y < h; y += 16) c.fillRect(0, y, w, 2); c.fillRect(0, 0, 2, h); }, [8, 1]) }), ceilM = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 1, side: THREE.DoubleSide });
+    const wallM = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: ctex(64, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#7a7064'); gr.addColorStop(.25, '#5e564c'); gr.addColorStop(1, '#3a3530'); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 8; y < h; y += 16) c.fillRect(0, y, w, 2); c.fillRect(0, 0, 2, h); }, [8, 1]) }), ceilM = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 1, side: THREE.DoubleSide });
     const wall = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), m = plane(L, H, wallM, (x0 + x1) / 2, H / 2, (z0 + z1) / 2, 0, Math.atan2(-(z1 - z0), x1 - x0)); m.raycast = _noRay; m.receiveShadow = m.castShadow = false; };
-    [-1, 1].forEach(sd => { wall(X + sd * 9.45, zA - .1, X + sd * 9.45, zB); wall(X + sd * 9.45, zB, X + sd * 4.2, zC); wall(X + sd * 4.2, zC, X + sd * 4.2, zD); });
+    [-1, 1].forEach(sd => { wall(X + sd * 9.38, zA - .1, X + sd * 9.38, zB); wall(X + sd * 9.38, zB, X + sd * 4.2, zC); wall(X + sd * 4.2, zC, X + sd * 4.2, zD); });
     { const pl = box(6.1, H, zB - zA, M(0x4a443c, { roughness: .9 }), X, H / 2, (zA + zB) / 2); pl.raycast = _noRay; pl.receiveShadow = pl.castShadow = false; }                                    // el pilar entre los dos carriles
-    const ceil = plane(20, zD - zA, ceilM, X, H, (zA + zD) / 2, Math.PI / 2); ceil.raycast = _noRay; ceil.receiveShadow = ceil.castShadow = false;
+    const ceil = plane(20, zD - zA, ceilM, X, H - .06, (zA + zD) / 2, Math.PI / 2); ceil.raycast = _noRay; ceil.receiveShadow = ceil.castShadow = false;
     const strip = new THREE.MeshBasicMaterial({ color: 0xffe2b0 }), strips = [];
     for (let z = zA + 3; z < zD - 1; z += 5) { const w = z < zB ? [-6.25, 6.25] : [0]; w.forEach(x => strips.push([X + x, H - .08, z])); }
     barInst(new THREE.BoxGeometry(1.6, .08, .4), strip, strips);
