@@ -285,7 +285,7 @@ body.plock #gl{cursor:none}
 #touch .up{grid-column:2}#touch .lf{grid-column:1;grid-row:2}#touch .dn{grid-column:2;grid-row:2}#touch .rt{grid-column:3;grid-row:2}
 #tuse{position:fixed;z-index:12;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:76px;height:76px;border-radius:50%;background:rgba(201,162,91,.85);color:#120f0a;border:0;font-family:var(--f-type);font-size:12px;letter-spacing:.1em;text-transform:uppercase;touch-action:none}
 body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#d8c9a8;font:italic 17px Georgia,serif;letter-spacing:.06em;z-index:999;pointer-events:none}body.qloading{cursor:progress}
-#title::after{content:'v2.7.0 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
+#title::after{content:'v2.7.1 \00B7  personajes 3D';position:absolute;right:18px;bottom:12px;color:rgba(216,201,168,.55);font:12px Georgia,serif;letter-spacing:.08em;pointer-events:none}
 /*NOSEL*/ html, body, button, #hud, #touch, #dialog, #caption, #super, .modal, #mainmenu, #pause, #card, #results { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; } input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; } img, canvas { -webkit-user-drag: none; user-drag: none; }
 </style>
 
@@ -364,6 +364,7 @@ body.qloading::after{content:'Cargando personajes…';position:fixed;left:50%;bo
       <button class="mi" id="m-chapters" type="button"><span>Capítulos</span></button>
       <button class="mi" id="m-ach" type="button"><span>Logros</span></button>
       <button class="mi" id="m-options" type="button"><span>Opciones</span></button>
+      <button class="mi" id="m-download" type="button" hidden><span>Descargar para PC</span><small>Versión de escritorio para Windows</small></button> <!--/*DL-btn*/-->
       <button class="mi" id="m-quit" type="button" hidden><span>Salir del juego</span></button>
     </nav>
     <div class="t-keys"><kbd>W A S D</kbd> moverte · <kbd>ratón</kbd> o <kbd>flechas</kbd> girar la cámara · <kbd>E</kbd> o <kbd>clic</kbd> examinar · <kbd>L</kbd> libreta · <kbd>Esc</kbd> o <kbd>P</kbd> pausa</div>
@@ -11665,6 +11666,7 @@ document.querySelectorAll('#o-q button').forEach(b => b.onclick = () => { OPT.q 
 $('#o-noir').onclick = () => { setNoir(!document.body.classList.contains('noir')); syncOptions(); };
 function setGrain(on) { OPT.grain = on; document.body.classList.toggle('nograin', !on); store.set('opt', OPT); }
 $('#o-grain').onclick = () => { setGrain(!OPT.grain); syncOptions(); };
+/*DL-js*/ if (!window.franklinApp) { $('#m-download').hidden = false; $('#m-download').onclick = () => { toast('Descargando', 'Descomprime el .zip y abre «El detective Franklin.exe»'); const w = window.open('https://github.com/leomilena/Franklin-Juego/releases/latest/download/El-detective-Franklin-Windows.zip', '_blank'); if (!w) location.href = 'https://github.com/leomilena/Franklin-Juego/releases/latest/download/El-detective-Franklin-Windows.zip'; }; }
 if (window.franklinApp) { $('#m-quit').hidden = false; $('#m-quit').onclick = () => window.franklinApp.quit(); }
 $('#o-full').onclick = async () => {
   if (window.franklinApp) { await window.franklinApp.toggleFullscreen(); setTimeout(syncOptions, 300); return; } try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch (e) { toast('Pantalla completa', 'No disponible en esta ventana'); } syncOptions(); };
