@@ -11666,7 +11666,7 @@ document.querySelectorAll('#o-q button').forEach(b => b.onclick = () => { OPT.q 
 $('#o-noir').onclick = () => { setNoir(!document.body.classList.contains('noir')); syncOptions(); };
 function setGrain(on) { OPT.grain = on; document.body.classList.toggle('nograin', !on); store.set('opt', OPT); }
 $('#o-grain').onclick = () => { setGrain(!OPT.grain); syncOptions(); };
-/*DL-js*/ if (!window.franklinApp) { $('#m-download').hidden = false; $('#m-download').onclick = () => { toast('Descargando', 'Descomprime el .zip y abre «El detective Franklin.exe»'); const w = window.open('https://github.com/leomilena/Franklin-Juego/releases/latest/download/El-detective-Franklin-Windows.zip', '_blank'); if (!w) location.href = 'https://github.com/leomilena/Franklin-Juego/releases/latest/download/El-detective-Franklin-Windows.zip'; }; }
+/*DL-js*/ if (!window.franklinApp) { $('#m-download').hidden = false; $('#m-download').onclick = () => { toast('Descargando', 'Abre el archivo .exe. Si Windows avisa, pulsa «Más información» y «Ejecutar de todas formas»'); const w = window.open('https://leomilena.github.io/Franklin-Juego/descargas/El-detective-Franklin.exe', '_blank'); if (!w) location.href = 'https://leomilena.github.io/Franklin-Juego/descargas/El-detective-Franklin.exe'; }; }
 if (window.franklinApp) { $('#m-quit').hidden = false; $('#m-quit').onclick = () => window.franklinApp.quit(); }
 $('#o-full').onclick = async () => {
   if (window.franklinApp) { await window.franklinApp.toggleFullscreen(); setTimeout(syncOptions, 300); return; } try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch (e) { toast('Pantalla completa', 'No disponible en esta ventana'); } syncOptions(); };
